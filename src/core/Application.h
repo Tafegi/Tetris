@@ -1,13 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <SFML/Graphics.hpp>
 #include "Logger.h"
 
-// Forward declarations у правильних просторах імен
 namespace controller
 {
     class GameController;
-    class StateMachine;
 }
 
 namespace core
@@ -28,9 +27,7 @@ namespace core
     private:
         bool running_{true};
         std::unique_ptr<Logger> logger_;
-
-        // Використовуємо точні типи з потрібного namespace
+        sf::RenderWindow window_;
         std::unique_ptr<controller::GameController> controller_;
-        //std::unique_ptr<controller::StateMachine> stateMachine_;
     };
 }

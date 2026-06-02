@@ -97,10 +97,7 @@ namespace model
 
     void Game::rotateCW()
     {
-        Tetromino rotated = activePiece_;
-        rotated.rotateClockwise();
-
-        if (rules_.canRotate(activePiece_, board_, Rotation::Clockwise))
+        if (rules_.canRotate(activePiece_, board_, Rotation::East))  // ← було Clockwise
         {
             activePiece_.rotateClockwise();
         }
@@ -108,7 +105,7 @@ namespace model
 
     void Game::rotateCCW()
     {
-        if (rules_.canRotate(activePiece_, board_, Rotation::CounterClockwise))
+        if (rules_.canRotate(activePiece_, board_, Rotation::West))  // ← було CounterClockwise
         {
             activePiece_.rotateCounterClockwise();
         }

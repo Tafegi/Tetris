@@ -1,6 +1,8 @@
-#pragma once // ПЕРЕВІР ЦЕЙ РЯДОК! Тут має бути саме pragma once
+#pragma once
 
 #include <memory>
+#include <SFML/Graphics.hpp>
+
 #include "model/game/Game.h"
 #include "view/GameView.h"
 #include "view/GameOverView.h"
@@ -17,11 +19,13 @@ namespace controller
     class GameController
     {
     public:
-        GameController(sf::RenderWindow& window);
+        explicit GameController(sf::RenderWindow& window);
 
         void handleEvent(const sf::Event& event);
         void update(float dt);
         void render();
+
+        StateMachine& stateMachine() { return stateMachine_; }
 
     private:
         void updateGame(float dt);
@@ -34,14 +38,14 @@ namespace controller
 
         model::Game game_;
 
-        view::GameView gameView_;
-        view::MenuView menuView_;
-        view::PauseView pauseView_;
+        view::GameView     gameView_;
+        view::MenuView     menuView_;
+        view::PauseView    pauseView_;
         view::GameOverView gameOverView_;
         view::StatisticsView statisticsView_;
-        view::SettingsView settingsView_;
+        view::SettingsView   settingsView_;
 
         InputController input_;
-        StateMachine stateMachine_;
+        StateMachine    stateMachine_;
     };
 }

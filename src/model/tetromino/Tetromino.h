@@ -26,13 +26,12 @@ namespace model
         void setPosition(Position pos);
         void updateShape();
 
-        // Додамо константу SIZE, яку шукає твій клас Board (Board.cpp:64)
         static constexpr int SIZE = 4;
 
     private:
         TetrominoType type_;
         Position position_{0, 0};
-        Rotation rotation_{Rotation::Clockwise}; // Початкове значення з твого енуму
+        Rotation rotation_{Rotation::North};  // ← було Clockwise
         Matrix shape_{SIZE, std::vector<int>(SIZE, 0)};
     };
 }
