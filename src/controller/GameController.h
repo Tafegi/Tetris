@@ -10,6 +10,8 @@
 #include "view/PauseView.h"
 #include "view/StatisticsView.h"
 #include "view/SettingsView.h"
+#include "model/statistics/StatisticsManager.h"
+#include "model/highscore/HighScoreManager.h"
 
 #include "InputController.h"
 #include "StateMachine.h"
@@ -20,6 +22,7 @@ namespace controller
     {
     public:
         explicit GameController(sf::RenderWindow& window);
+        ~GameController();
 
         void handleEvent(const sf::Event& event);
         void update(float dt);
@@ -33,17 +36,23 @@ namespace controller
         void updatePause(float dt);
         void updateGameOver(float dt);
 
+        void executeMenuOption(view::MenuOption opt);
+        void saveScore();
+
     private:
         sf::RenderWindow& window_;
 
         model::Game game_;
 
-        view::GameView     gameView_;
-        view::MenuView     menuView_;
-        view::PauseView    pauseView_;
-        view::GameOverView gameOverView_;
+        view::GameView       gameView_;
+        view::MenuView       menuView_;
+        view::PauseView      pauseView_;
+        view::GameOverView   gameOverView_;
         view::StatisticsView statisticsView_;
         view::SettingsView   settingsView_;
+
+        model::StatisticsManager statisticsManager_;
+        model::HighScoreManager  highScoreManager_;
 
         InputController input_;
         StateMachine    stateMachine_;

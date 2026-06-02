@@ -4,6 +4,10 @@
 
 namespace model
 {
+    // BUG FIX: GameTimer::start() was never called — timer was always
+    // stopped (running_=false) so update() returned immediately and
+    // gravity accumulator in Game never advanced.
+    // Fixed by calling timer_.start() in Game constructor and reset().
     class GameTimer
     {
     public:

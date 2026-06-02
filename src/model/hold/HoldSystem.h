@@ -9,20 +9,25 @@ namespace model
     public:
         HoldSystem();
 
-        // returns true if swap happened
+        // Returns true if hold is allowed this piece
         bool canHold() const noexcept;
 
-        // performs hold swap
-        // currentPiece becomes held, returns previous held (if any)
+        // Performs hold: returns the type that should become active.
+        // If nothing was held yet, stores current and returns current
+        // (caller should spawn next from queue instead).
         TetrominoType hold(TetrominoType current);
+
+        // BUG FIX: must be called each time a new piece spawns
+        // so the player can hold once per piece (not once per game)
+        void resetTurn();
 
         void reset();
 
         bool hasHeld() const noexcept;
+        TetrominoType heldType() const noexcept;
 
     private:
         bool usedThisTurn_;
-
         bool hasHeld_;
         TetrominoType heldType_;
     };

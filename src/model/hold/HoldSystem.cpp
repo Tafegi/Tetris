@@ -16,6 +16,13 @@ namespace model
         heldType_ = TetrominoType::I;
     }
 
+    // BUG FIX: was missing. Called by Game::spawnNext() so hold is
+    // available once for every new piece (not locked after first use).
+    void HoldSystem::resetTurn()
+    {
+        usedThisTurn_ = false;
+    }
+
     bool HoldSystem::canHold() const noexcept
     {
         return !usedThisTurn_;
@@ -26,12 +33,15 @@ namespace model
         return hasHeld_;
     }
 
+    TetrominoType HoldSystem::heldType() const noexcept
+    {
+        return heldType_;
+    }
+
     TetrominoType HoldSystem::hold(TetrominoType current)
     {
         if (usedThisTurn_)
-        {
             return current;
-        }
 
         usedThisTurn_ = true;
 
@@ -39,12 +49,11 @@ namespace model
         {
             hasHeld_ = true;
             heldType_ = current;
-            return current; // new piece comes from queue (handled in Game)
+            return current; // caller should spawn next from queue
         }
 
         TetrominoType swapped = heldType_;
         heldType_ = current;
-
         return swapped;
     }
 }

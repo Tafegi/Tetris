@@ -1,8 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <vector>
-
 #include "../types/TetrominoType.h"
 #include "../random/RandomBagGenerator.h"
 
@@ -11,13 +9,12 @@ namespace model
     class PieceQueue
     {
     public:
-        explicit PieceQueue();
+        PieceQueue();
 
         TetrominoType next();
         TetrominoType peek(std::size_t index) const;
 
         void refillIfNeeded();
-
         void reset();
 
         std::size_t size() const noexcept;
@@ -25,8 +22,7 @@ namespace model
     private:
         void fillQueue();
 
-    private:
-        static constexpr std::size_t QUEUE_SIZE = 5;
+        static constexpr std::size_t QUEUE_SIZE = 6;
 
         std::deque<TetrominoType> queue_;
         RandomBagGenerator generator_;

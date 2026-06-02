@@ -11,29 +11,56 @@ namespace controller
         , gameOverView_(window)
         , statisticsView_(window)
         , settingsView_(window)
-        , input_()
         , stateMachine_()
     {
+        highScoreManager_.load("scores.dat");
+    }
+
+    GameController::~GameController()
+    {
+        highScoreManager_.save("scores.dat");
     }
 
     void GameController::handleEvent(const sf::Event& event)
     {
-        input_.process(event, stateMachine_, game_);
+        // ----- Mouse moved: hover highlight in menus -----
+        if (const auto* mm = event.getIf<sf::Event::MouseMoved>())
+        {
+            if (stateMachine_.current() == State::Menu)
+                menuView_.handleMouseMove({mm->position.x, mm->position.y});
+        }
 
+        // ----- Mouse clicked -----
+        if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
+        {
+            if (mb->button == sf::Mouse::Button::Left)
+            {
+                sf::Vector2i mp(mb->position.x, mb->position.y);
+
+                if (stateMachine_.current() == State::Menu)
+                {
+                    if (menuView_.handleMouseClick(mp))
+                        executeMenuOption(menuView_.selectedOption());
+                }
+                else if (stateMachine_.current() == State::GameOver)
+                {
+                    bool playAgain = false, mainMenu = false;
+                    gameOverView_.handleMouseClick(mp, playAgain, mainMenu);
+                    if (playAgain) { game_.reset(); stateMachine_.setState(State::Playing); }
+                    if (mainMenu)  { stateMachine_.setState(State::Menu); }
+                }
+            }
+        }
+
+        // ----- Keyboard -----
         if (const auto* key = event.getIf<sf::Event::KeyPressed>())
         {
             switch (stateMachine_.current())
             {
                 case State::Menu:
-                    if (key->code == sf::Keyboard::Key::Up)   menuView_.moveUp();
-                    if (key->code == sf::Keyboard::Key::Down) menuView_.moveDown();
-                    if (key->code == sf::Keyboard::Key::Enter)
-                    {
-                        auto opt = menuView_.selectedOption();
-                        if (opt == view::MenuOption::StartGame)  stateMachine_.setState(State::Playing);
-                        if (opt == view::MenuOption::Settings)   stateMachine_.setState(State::Settings);
-                        if (opt == view::MenuOption::Exit)       stateMachine_.requestExit();
-                    }
+                    if (key->code == sf::Keyboard::Key::Up)    menuView_.moveUp();
+                    if (key->code == sf::Keyboard::Key::Down)  menuView_.moveDown();
+                    if (key->code == sf::Keyboard::Key::Enter) executeMenuOption(menuView_.selectedOption());
                     break;
 
                 case State::Playing:
@@ -51,16 +78,78 @@ namespace controller
                     if (key->code == sf::Keyboard::Key::M)      stateMachine_.setState(State::Menu);
                     break;
 
-                default:
+                case State::GameOver:
+                    if (key->code == sf::Keyboard::Key::Enter)
+                    {
+                        saveScore();
+                        game_.reset();
+                        stateMachine_.setState(State::Playing);
+                    }
+                    if (key->code == sf::Keyboard::Key::Escape)
+                    {
+                        saveScore();
+                        stateMachine_.setState(State::Menu);
+                    }
                     break;
+
+                case State::Settings:
+                    if (key->code == sf::Keyboard::Key::Up)     settingsView_.moveUp();
+                    if (key->code == sf::Keyboard::Key::Down)   settingsView_.moveDown();
+                    if (key->code == sf::Keyboard::Key::Left)   settingsView_.decreaseValue();
+                    if (key->code == sf::Keyboard::Key::Right)  settingsView_.increaseValue();
+                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.setState(State::Menu);
+                    break;
+
+                case State::Statistics:
+                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.setState(State::Menu);
+                    break;
+
+                default: break;
             }
         }
     }
 
+    void GameController::executeMenuOption(view::MenuOption opt)
+    {
+        switch (opt)
+        {
+            case view::MenuOption::StartGame:
+                game_.reset();
+                stateMachine_.setState(State::Playing);
+                break;
+            case view::MenuOption::Statistics:
+                stateMachine_.setState(State::Statistics);
+                break;
+            case view::MenuOption::Leaderboard:
+                stateMachine_.setState(State::Leaderboard);
+                break;
+            case view::MenuOption::Settings:
+                stateMachine_.setState(State::Settings);
+                break;
+            case view::MenuOption::Exit:
+                stateMachine_.requestExit();
+                break;
+        }
+    }
+
+    void GameController::saveScore()
+    {
+        if (game_.score() == 0) return;
+
+        model::HighScoreEntry entry;
+        entry.playerName  = "Player";
+        entry.score       = game_.score();
+        entry.level       = game_.level();
+        entry.lines       = game_.lines();
+        entry.durationSec = 0;
+        entry.date        = "2025";
+
+        highScoreManager_.add(entry);
+        highScoreManager_.save("scores.dat");
+    }
+
     void GameController::update(float dt)
     {
-        input_.update(dt, game_);
-
         if (stateMachine_.current() == State::Playing)
         {
             game_.update(dt);
@@ -72,6 +161,9 @@ namespace controller
 
         if (stateMachine_.current() == State::Menu)
             menuView_.update(dt);
+
+        if (stateMachine_.current() == State::Settings)
+            settingsView_.update(dt);
     }
 
     void GameController::render()
@@ -83,28 +175,30 @@ namespace controller
             case State::Menu:
                 menuView_.render();
                 break;
-
             case State::Playing:
                 gameView_.render(game_);
                 break;
-
             case State::Pause:
                 gameView_.render(game_);
                 pauseView_.render();
                 break;
-
             case State::GameOver:
                 gameOverView_.render(game_, "");
                 break;
-
+            case State::Settings:
+                settingsView_.render();
+                break;
+            case State::Statistics:
+                statisticsView_.render(statisticsManager_);
+                break;
             default:
                 window_.display();
                 break;
         }
     }
 
-    void GameController::updateGame(float dt)   { (void)dt; }
-    void GameController::updateMenu(float dt)   { (void)dt; }
-    void GameController::updatePause(float dt)  { (void)dt; }
+    void GameController::updateGame(float dt)    { (void)dt; }
+    void GameController::updateMenu(float dt)    { (void)dt; }
+    void GameController::updatePause(float dt)   { (void)dt; }
     void GameController::updateGameOver(float dt){ (void)dt; }
 }

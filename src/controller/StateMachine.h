@@ -2,7 +2,9 @@
 
 #include <optional>
 
-#include "../view/MenuView.h"
+// BUG FIX: removed `#include "../view/MenuView.h"` which created a
+// circular dependency: view → model → controller/StateMachine → view.
+// StateMachine does not actually need anything from MenuView.
 
 namespace controller
 {
