@@ -1,3 +1,0 @@
-add_library(TetrisInterfaces INTERFACE)
-
-target_include_directories(TetrisInterfaces INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

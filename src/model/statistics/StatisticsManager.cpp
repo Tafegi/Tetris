@@ -1,89 +1,46 @@
+// src/model/statistics/StatisticsManager.cpp
 #include "StatisticsManager.h"
+#include <numeric>
+#include <algorithm>
 
-namespace model
+void StatisticsManager::recordPiece(TetrominoType type) noexcept
 {
-    StatisticsManager::StatisticsManager()
-    {
-        reset();
-    }
+    const auto idx = static_cast<std::size_t>(type);
+    if (idx < k_typeCount)
+        ++m_pieceCounts[idx];
+}
 
-    void StatisticsManager::reset()
-    {
-        totalGames_ = 0;
-        totalPlayTime_ = 0;
-        totalLines_ = 0;
-        highestScore_ = 0;
+void StatisticsManager::recordLineClear(int lines) noexcept
+{
+    if (lines >= 1 && lines <= 4)
+        ++m_lineClearCounts[lines - 1];
+}
 
-        pieceDistribution_.fill(0);
-    }
+void StatisticsManager::reset() noexcept
+{
+    m_pieceCounts.fill(0);
+    m_lineClearCounts.fill(0);
+}
 
-    void StatisticsManager::onPiecePlaced(TetrominoType type)
-    {
-        auto index = static_cast<std::size_t>(type);
-        if (index < pieceDistribution_.size())
-        {
-            ++pieceDistribution_[index];
-        }
-    }
+uint32_t StatisticsManager::getPieceCount(TetrominoType type) const noexcept
+{
+    const auto idx = static_cast<std::size_t>(type);
+    return (idx < k_typeCount) ? m_pieceCounts[idx] : 0u;
+}
 
-    void StatisticsManager::onLinesCleared(int lines)
-    {
-        if (lines > 0)
-        {
-            totalLines_ += lines;
-        }
-    }
+uint32_t StatisticsManager::getTotalPieces() const noexcept
+{
+    return std::accumulate(m_pieceCounts.begin(), m_pieceCounts.end(), 0u);
+}
 
-    void StatisticsManager::onTetris()
-    {
-        // marker event (can be extended later)
-    }
+uint32_t StatisticsManager::getLineClearCount(int lines) const noexcept
+{
+    if (lines >= 1 && lines <= 4)
+        return m_lineClearCounts[lines - 1];
+    return 0u;
+}
 
-    void StatisticsManager::onTSpin()
-    {
-        // marker event (can be extended later)
-    }
-
-    void StatisticsManager::onPerfectClear()
-    {
-        // marker event (can be extended later)
-    }
-
-    void StatisticsManager::addPlayTime(std::int64_t seconds)
-    {
-        totalPlayTime_ += seconds;
-    }
-
-    std::int64_t StatisticsManager::totalGames() const noexcept
-    {
-        return totalGames_;
-    }
-
-    std::int64_t StatisticsManager::totalPlayTime() const noexcept
-    {
-        return totalPlayTime_;
-    }
-
-    std::int64_t StatisticsManager::totalLines() const noexcept
-    {
-        return totalLines_;
-    }
-
-    std::int64_t StatisticsManager::highestScore() const noexcept
-    {
-        return highestScore_;
-    }
-
-    const std::array<std::int64_t, 7>& StatisticsManager::pieceDistribution() const noexcept
-    {
-        return pieceDistribution_;
-    }
-
-    void StatisticsManager::updateHighestScore(int score)
-    {
-        if (score > highestScore_)
-        {
-            highestScore_ = score;
-        }
-    }
+uint32_t StatisticsManager::getTotalLinesCleared() const noexcept
+{
+    return std::accumulate(m_lineClearCounts.begin(), m_lineClearCounts.end(), 0u);
 }

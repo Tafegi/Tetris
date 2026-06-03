@@ -1,59 +1,46 @@
+// src/model/hold/HoldSystem.cpp
 #include "HoldSystem.h"
+#include "model/tetromino/TetrominoFactory.h"
 
-namespace model
+bool HoldSystem::hold(Tetromino& activePiece, Tetromino nextFromQueue)
 {
-    HoldSystem::HoldSystem()
-        : usedThisTurn_(false),
-          hasHeld_(false),
-          heldType_(TetrominoType::I)
+    if (m_locked) return false;
+
+    if (m_held.has_value())
     {
+        // Swap held <-> active; reset position/rotation of both
+        Tetromino newActive = TetrominoFactory::create(m_held->getType());
+        m_held = TetrominoFactory::create(activePiece.getType());
+        activePiece = std::move(newActive);
+    }
+    else
+    {
+        // First hold: store active, promote next from queue
+        m_held      = TetrominoFactory::create(activePiece.getType());
+        activePiece = std::move(nextFromQueue);
     }
 
-    void HoldSystem::reset()
-    {
-        usedThisTurn_ = false;
-        hasHeld_ = false;
-        heldType_ = TetrominoType::I;
-    }
+    m_locked = true;
+    return true;
+}
 
-    // BUG FIX: was missing. Called by Game::spawnNext() so hold is
-    // available once for every new piece (not locked after first use).
-    void HoldSystem::resetTurn()
-    {
-        usedThisTurn_ = false;
-    }
+void HoldSystem::unlock() noexcept
+{
+    m_locked = false;
+}
 
-    bool HoldSystem::canHold() const noexcept
-    {
-        return !usedThisTurn_;
-    }
+void HoldSystem::reset() noexcept
+{
+    m_held.reset();
+    m_locked = false;
+}
 
-    bool HoldSystem::hasHeld() const noexcept
-    {
-        return hasHeld_;
-    }
+bool HoldSystem::hasHeld() const noexcept
+{
+    return m_held.has_value();
+}
 
-    TetrominoType HoldSystem::heldType() const noexcept
-    {
-        return heldType_;
-    }
-
-    TetrominoType HoldSystem::hold(TetrominoType current)
-    {
-        if (usedThisTurn_)
-            return current;
-
-        usedThisTurn_ = true;
-
-        if (!hasHeld_)
-        {
-            hasHeld_ = true;
-            heldType_ = current;
-            return current; // caller should spawn next from queue
-        }
-
-        TetrominoType swapped = heldType_;
-        heldType_ = current;
-        return swapped;
-    }
+const Tetromino& HoldSystem::getHeld() const
+{
+    return m_held.value();
 }

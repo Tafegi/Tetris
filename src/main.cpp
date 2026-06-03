@@ -1,8 +1,9 @@
+// src/main.cpp
 #include "core/Application.h"
 
 int main()
 {
-    core::Application app;
+    Application app;
     app.run();
     return 0;
 }

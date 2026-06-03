@@ -1,64 +1,27 @@
+// src/model/timer/GameTimer.cpp
 #include "GameTimer.h"
 
-namespace model
+GameTimer::GameTimer(float interval) noexcept
+    : m_interval(interval)
+{}
+
+void GameTimer::setInterval(float seconds) noexcept
 {
-    GameTimer::GameTimer()
-        : deltaTime_(0.0),
-          totalTime_(0.0),
-          running_(false)
+    m_interval = seconds;
+}
+
+void GameTimer::reset() noexcept
+{
+    m_accumulated = 0.0f;
+}
+
+bool GameTimer::update(float deltaTime) noexcept
+{
+    m_accumulated += deltaTime;
+    if (m_accumulated >= m_interval)
     {
-        lastTick_ = Clock::now();
-        startTime_ = lastTick_;
+        m_accumulated -= m_interval;
+        return true;
     }
-
-    void GameTimer::reset()
-    {
-        deltaTime_ = 0.0;
-        totalTime_ = 0.0;
-
-        lastTick_ = Clock::now();
-        startTime_ = lastTick_;
-
-        running_ = false;
-    }
-
-    void GameTimer::start()
-    {
-        running_ = true;
-        lastTick_ = Clock::now();
-        startTime_ = lastTick_;
-    }
-
-    void GameTimer::stop()
-    {
-        running_ = false;
-    }
-
-    void GameTimer::update()
-    {
-        if (!running_)
-            return;
-
-        auto now = Clock::now();
-
-        deltaTime_ = std::chrono::duration<double>(now - lastTick_).count();
-        totalTime_ = std::chrono::duration<double>(now - startTime_).count();
-
-        lastTick_ = now;
-    }
-
-    double GameTimer::deltaTime() const noexcept
-    {
-        return deltaTime_;
-    }
-
-    double GameTimer::totalTime() const noexcept
-    {
-        return totalTime_;
-    }
-
-    bool GameTimer::isRunning() const noexcept
-    {
-        return running_;
-    }
+    return false;
 }

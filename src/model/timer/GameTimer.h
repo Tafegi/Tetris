@@ -1,40 +1,26 @@
+// src/model/timer/GameTimer.h
 #pragma once
 
-#include <chrono>
-
-namespace model
+/**
+ * @brief Accumulates elapsed time and fires a callback when an interval elapses.
+ *
+ * Used for the gravity timer (auto-drop) and lock-delay timer.
+ */
+class GameTimer
 {
-    // BUG FIX: GameTimer::start() was never called — timer was always
-    // stopped (running_=false) so update() returned immediately and
-    // gravity accumulator in Game never advanced.
-    // Fixed by calling timer_.start() in Game constructor and reset().
-    class GameTimer
-    {
-    public:
-        using Clock = std::chrono::steady_clock;
+public:
+    explicit GameTimer(float interval = 1.0f) noexcept;
 
-    public:
-        GameTimer();
+    void  setInterval(float seconds) noexcept;
+    void  reset()                    noexcept;
 
-        void reset();
+    /// Advance the timer by deltaTime; returns true each time it fires.
+    bool  update(float deltaTime)    noexcept;
 
-        void start();
-        void stop();
+    [[nodiscard]] float getInterval()    const noexcept { return m_interval; }
+    [[nodiscard]] float getAccumulated() const noexcept { return m_accumulated; }
 
-        void update();
-
-        double deltaTime() const noexcept;
-        double totalTime() const noexcept;
-
-        bool isRunning() const noexcept;
-
-    private:
-        Clock::time_point lastTick_;
-        Clock::time_point startTime_;
-
-        double deltaTime_;
-        double totalTime_;
-
-        bool running_;
-    };
-}
+private:
+    float m_interval{1.0f};
+    float m_accumulated{0.0f};
+};

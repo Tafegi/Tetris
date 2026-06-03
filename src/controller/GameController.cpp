@@ -1,204 +1,169 @@
+// src/controller/GameController.cpp
 #include "GameController.h"
 
-namespace controller
+GameController::GameController(sf::RenderWindow& window)
+    : m_window(window)
 {
-    GameController::GameController(sf::RenderWindow& window)
-        : window_(window)
-        , game_()
-        , gameView_(window)
-        , menuView_(window)
-        , pauseView_(window)
-        , gameOverView_(window)
-        , statisticsView_(window)
-        , settingsView_(window)
-        , stateMachine_()
+    m_menuView       = std::make_unique<MenuView>(window);
+    m_gameView       = std::make_unique<GameView>(window);
+    m_gameOverView   = std::make_unique<GameOverView>(window);
+    m_statsView      = std::make_unique<StatisticsView>(window);
+}
+
+void GameController::transitionTo(AppState next)
+{
+    m_state = next;
+    if (next == AppState::Playing)
+        m_game.start();
+}
+
+// ── Event dispatch ────────────────────────────────────────────────────────────
+
+void GameController::handleEvent(const sf::Event& event)
+{
+    switch (m_state)
     {
-        highScoreManager_.load("scores.dat");
+        case AppState::Menu:       handleMenuEvent(event);     break;
+        case AppState::Playing:
+        case AppState::Paused:     handlePlayingEvent(event);  break;
+        case AppState::GameOver:   handleGameOverEvent(event); break;
+        case AppState::Statistics: handleStatsEvent(event);    break;
     }
+}
 
-    GameController::~GameController()
+void GameController::handleMenuEvent(const sf::Event& event)
+{
+    // SFML 3: getIf returns a pointer to the subtype, or nullptr
+    if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
-        highScoreManager_.save("scores.dat");
-    }
-
-    void GameController::handleEvent(const sf::Event& event)
-    {
-        // ----- Mouse moved: hover highlight in menus -----
-        if (const auto* mm = event.getIf<sf::Event::MouseMoved>())
+        switch (kp->code)
         {
-            if (stateMachine_.current() == State::Menu)
-                menuView_.handleMouseMove({mm->position.x, mm->position.y});
-        }
-
-        // ----- Mouse clicked -----
-        if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
-        {
-            if (mb->button == sf::Mouse::Button::Left)
-            {
-                sf::Vector2i mp(mb->position.x, mb->position.y);
-
-                if (stateMachine_.current() == State::Menu)
-                {
-                    if (menuView_.handleMouseClick(mp))
-                        executeMenuOption(menuView_.selectedOption());
-                }
-                else if (stateMachine_.current() == State::GameOver)
-                {
-                    bool playAgain = false, mainMenu = false;
-                    gameOverView_.handleMouseClick(mp, playAgain, mainMenu);
-                    if (playAgain) { game_.reset(); stateMachine_.setState(State::Playing); }
-                    if (mainMenu)  { stateMachine_.setState(State::Menu); }
-                }
-            }
-        }
-
-        // ----- Keyboard -----
-        if (const auto* key = event.getIf<sf::Event::KeyPressed>())
-        {
-            switch (stateMachine_.current())
-            {
-                case State::Menu:
-                    if (key->code == sf::Keyboard::Key::Up)    menuView_.moveUp();
-                    if (key->code == sf::Keyboard::Key::Down)  menuView_.moveDown();
-                    if (key->code == sf::Keyboard::Key::Enter) executeMenuOption(menuView_.selectedOption());
-                    break;
-
-                case State::Playing:
-                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.setState(State::Pause);
-                    if (key->code == sf::Keyboard::Key::Left)   game_.moveLeft();
-                    if (key->code == sf::Keyboard::Key::Right)  game_.moveRight();
-                    if (key->code == sf::Keyboard::Key::Down)   game_.moveDown();
-                    if (key->code == sf::Keyboard::Key::Up)     game_.rotateCW();
-                    if (key->code == sf::Keyboard::Key::Space)  game_.hardDrop();
-                    if (key->code == sf::Keyboard::Key::C)      game_.hold();
-                    break;
-
-                case State::Pause:
-                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.resume();
-                    if (key->code == sf::Keyboard::Key::M)      stateMachine_.setState(State::Menu);
-                    break;
-
-                case State::GameOver:
-                    if (key->code == sf::Keyboard::Key::Enter)
-                    {
-                        saveScore();
-                        game_.reset();
-                        stateMachine_.setState(State::Playing);
-                    }
-                    if (key->code == sf::Keyboard::Key::Escape)
-                    {
-                        saveScore();
-                        stateMachine_.setState(State::Menu);
-                    }
-                    break;
-
-                case State::Settings:
-                    if (key->code == sf::Keyboard::Key::Up)     settingsView_.moveUp();
-                    if (key->code == sf::Keyboard::Key::Down)   settingsView_.moveDown();
-                    if (key->code == sf::Keyboard::Key::Left)   settingsView_.decreaseValue();
-                    if (key->code == sf::Keyboard::Key::Right)  settingsView_.increaseValue();
-                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.setState(State::Menu);
-                    break;
-
-                case State::Statistics:
-                    if (key->code == sf::Keyboard::Key::Escape) stateMachine_.setState(State::Menu);
-                    break;
-
-                default: break;
-            }
+            case sf::Keyboard::Key::Enter:  transitionTo(AppState::Playing);    break;
+            case sf::Keyboard::Key::S:      transitionTo(AppState::Statistics); break;
+            case sf::Keyboard::Key::Escape: m_window.close();                   break;
+            default: break;
         }
     }
+}
 
-    void GameController::executeMenuOption(view::MenuOption opt)
+void GameController::handlePlayingEvent(const sf::Event& event)
+{
+    if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
-        switch (opt)
+        switch (kp->code)
         {
-            case view::MenuOption::StartGame:
-                game_.reset();
-                stateMachine_.setState(State::Playing);
+            case sf::Keyboard::Key::Left:
+                m_leftHeld     = true;
+                m_dasTriggered = false;
+                m_dasAccum     = 0.0f;
+                m_arrAccum     = 0.0f;
+                m_game.moveLeft();
                 break;
-            case view::MenuOption::Statistics:
-                stateMachine_.setState(State::Statistics);
+            case sf::Keyboard::Key::Right:
+                m_rightHeld    = true;
+                m_dasTriggered = false;
+                m_dasAccum     = 0.0f;
+                m_arrAccum     = 0.0f;
+                m_game.moveRight();
                 break;
-            case view::MenuOption::Leaderboard:
-                stateMachine_.setState(State::Leaderboard);
-                break;
-            case view::MenuOption::Settings:
-                stateMachine_.setState(State::Settings);
-                break;
-            case view::MenuOption::Exit:
-                stateMachine_.requestExit();
-                break;
+            case sf::Keyboard::Key::Down:    m_game.softDrop();    break;
+            case sf::Keyboard::Key::Up:
+            case sf::Keyboard::Key::X:       m_game.rotateCW();    break;
+            case sf::Keyboard::Key::Z:       m_game.rotateCCW();   break;
+            case sf::Keyboard::Key::Space:   m_game.hardDrop();    break;
+            case sf::Keyboard::Key::C:
+            case sf::Keyboard::Key::LShift:  m_game.holdPiece();   break;
+            case sf::Keyboard::Key::P:
+            case sf::Keyboard::Key::Escape:  m_game.togglePause(); break;
+            default: break;
         }
     }
-
-    void GameController::saveScore()
+    else if (const auto* kr = event.getIf<sf::Event::KeyReleased>())
     {
-        if (game_.score() == 0) return;
-
-        model::HighScoreEntry entry;
-        entry.playerName  = "Player";
-        entry.score       = game_.score();
-        entry.level       = game_.level();
-        entry.lines       = game_.lines();
-        entry.durationSec = 0;
-        entry.date        = "2025";
-
-        highScoreManager_.add(entry);
-        highScoreManager_.save("scores.dat");
+        if (kr->code == sf::Keyboard::Key::Left)  m_leftHeld  = false;
+        if (kr->code == sf::Keyboard::Key::Right) m_rightHeld = false;
     }
+}
 
-    void GameController::update(float dt)
+void GameController::handleGameOverEvent(const sf::Event& event)
+{
+    if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
-        if (stateMachine_.current() == State::Playing)
+        switch (kp->code)
         {
-            game_.update(dt);
-            gameView_.update(dt);
-
-            if (game_.state() == model::GameState::GameOver)
-                stateMachine_.setState(State::GameOver);
-        }
-
-        if (stateMachine_.current() == State::Menu)
-            menuView_.update(dt);
-
-        if (stateMachine_.current() == State::Settings)
-            settingsView_.update(dt);
-    }
-
-    void GameController::render()
-    {
-        window_.clear(sf::Color::Black);
-
-        switch (stateMachine_.current())
-        {
-            case State::Menu:
-                menuView_.render();
-                break;
-            case State::Playing:
-                gameView_.render(game_);
-                break;
-            case State::Pause:
-                gameView_.render(game_);
-                pauseView_.render();
-                break;
-            case State::GameOver:
-                gameOverView_.render(game_, "");
-                break;
-            case State::Settings:
-                settingsView_.render();
-                break;
-            case State::Statistics:
-                statisticsView_.render(statisticsManager_);
-                break;
-            default:
-                window_.display();
-                break;
+            case sf::Keyboard::Key::Enter:  transitionTo(AppState::Playing);    break;
+            case sf::Keyboard::Key::S:      transitionTo(AppState::Statistics); break;
+            case sf::Keyboard::Key::Escape: transitionTo(AppState::Menu);       break;
+            default: break;
         }
     }
+}
 
-    void GameController::updateGame(float dt)    { (void)dt; }
-    void GameController::updateMenu(float dt)    { (void)dt; }
-    void GameController::updatePause(float dt)   { (void)dt; }
-    void GameController::updateGameOver(float dt){ (void)dt; }
+void GameController::handleStatsEvent(const sf::Event& event)
+{
+    if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
+    {
+        if (kp->code == sf::Keyboard::Key::Escape ||
+            kp->code == sf::Keyboard::Key::Enter)
+        {
+            transitionTo(AppState::Menu);
+        }
+    }
+}
+
+// ── Update ────────────────────────────────────────────────────────────────────
+
+void GameController::update(float deltaTime)
+{
+    if (m_state == AppState::Playing)
+    {
+        updateAutoRepeat(deltaTime);
+        m_game.update(deltaTime);
+
+        if (m_game.isGameOver())
+            m_state = AppState::GameOver;
+    }
+}
+
+void GameController::updateAutoRepeat(float deltaTime)
+{
+    if (!m_leftHeld && !m_rightHeld) return;
+
+    m_dasAccum += deltaTime;
+    if (m_dasAccum >= k_dasDelay)
+    {
+        m_dasTriggered = true;
+        m_arrAccum += deltaTime;
+        if (m_arrAccum >= k_arrRate)
+        {
+            m_arrAccum -= k_arrRate;
+            if (m_leftHeld)  m_game.moveLeft();
+            if (m_rightHeld) m_game.moveRight();
+        }
+    }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+void GameController::render()
+{
+    switch (m_state)
+    {
+        case AppState::Menu:
+            m_menuView->render();
+            break;
+        case AppState::Playing:
+        case AppState::Paused:
+            m_gameView->render(m_game);
+            break;
+        case AppState::GameOver:
+            m_gameView->render(m_game);
+            m_gameOverView->render(m_game);
+            break;
+        case AppState::Statistics:
+            m_statsView->render(m_game.getStats(),
+                                m_game.getScore(),
+                                m_game.getLevel());
+            break;
+    }
 }

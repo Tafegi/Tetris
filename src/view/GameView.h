@@ -1,38 +1,51 @@
+// src/view/GameView.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <optional>
+#include <memory>
 
-#include "../model/game/Game.h"
-#include "AnimationSystem.h"
+// Forward declarations – keep view headers thin
+class Game;
+class Tetromino;
+class Board;
 
-namespace view
+/**
+ * @brief Renders the main game screen: board, active piece, ghost, HUD panels.
+ *
+ * Owns the font and all reusable sf:: objects; rebuilds nothing per-frame
+ * unless state changes.  All measurements are in pixels, derived from
+ * the single constant k_cellSize.
+ */
+class GameView
 {
-    class GameView
-    {
-    public:
-        explicit GameView(sf::RenderWindow& window);
+public:
+    explicit GameView(sf::RenderWindow& window);
 
-        void render(const model::Game& game);
-        void update(float dt);
+    void render(const Game& game);
 
-    private:
-        void drawBoardBorder();
-        void drawBoard(const model::Board& board);
-        void drawPiece(const model::Tetromino& piece);
-        void drawGhost(const model::Tetromino& piece, const model::Board& board);
-        void drawHUD(const model::Game& game);
-        void drawMiniPiece(model::TetrominoType type, float px, float py);
+private:
+    // ── Drawing helpers ────────────────────────────────────────────────────
+    void drawBoard       (const Game& game);
+    void drawActivePiece (const Game& game);
+    void drawGhostPiece  (const Game& game);
+    void drawHUD         (const Game& game);
+    void drawNextPanel   (const Game& game);
+    void drawHoldPanel   (const Game& game);
+    void drawPausedOverlay();
 
-        sf::Vector2f toScreen(int x, int y) const;
+    void drawCell(int col, int row, sf::Color color, float alpha = 1.0f);
+    void drawPiecePreview(const Tetromino& piece, float originX, float originY);
 
-    private:
-        sf::RenderWindow& window_;
-        sf::Font font_;
+    sf::RenderWindow& m_window;
+    sf::Font          m_font;
 
-        sf::RectangleShape blockShape_;
-        sf::RectangleShape ghostShape_;
+    // Layout constants
+    static constexpr float k_cellSize     = 30.0f;
+    static constexpr float k_boardLeft    = 200.0f;  // px from window left
+    static constexpr float k_boardTop     = 20.0f;
+    static constexpr int   k_visibleRows  = 20;
+    static constexpr int   k_hiddenRows   = 2;
 
-        AnimationSystem animationSystem_;
-    };
-}
+    sf::RectangleShape m_cellShape;
+    sf::RectangleShape m_boardBorder;
+};

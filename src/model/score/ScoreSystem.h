@@ -1,36 +1,29 @@
+// src/model/score/ScoreSystem.h
 #pragma once
-
 #include <cstdint>
 
-#include "../types/ScoreEvent.h"
-
-namespace model
+/**
+ * @brief Classic Tetris scoring (Guideline style).
+ *
+ * Points per clear: Single=100, Double=300, Triple=500, Tetris=800.
+ * All values are multiplied by the current level.
+ * A soft-drop adds 1 pt / cell; hard-drop adds 2 pts / cell.
+ */
+class ScoreSystem
 {
-    class ScoreSystem
-    {
-    public:
-        ScoreSystem();
+public:
+    ScoreSystem() = default;
 
-        void reset();
+    void addClearPoints(int linesCleared, int level) noexcept;
+    void addSoftDrop(int cells) noexcept;
+    void addHardDrop(int cells) noexcept;
 
-        void addEvent(ScoreEvent event, int linesCleared = 0);
+    [[nodiscard]] uint64_t getScore()    const noexcept { return m_score;    }
+    [[nodiscard]] uint64_t getHighScore()const noexcept { return m_highScore; }
 
-        std::int64_t score() const noexcept;
-        std::int32_t combo() const noexcept;
-        bool backToBack() const noexcept;
+    void reset() noexcept;
 
-    private:
-        void updateCombo(int linesCleared);
-        void updateBackToBack(ScoreEvent event, int linesCleared);
-
-        std::int64_t calculateScore(ScoreEvent event, int linesCleared) const;
-
-    private:
-        std::int64_t score_;
-
-        std::int32_t combo_;
-        bool backToBack_;
-
-        bool lastWasTetrisOrTSpin_;
-    };
-}
+private:
+    uint64_t m_score{0};
+    uint64_t m_highScore{0};
+};

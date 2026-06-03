@@ -1,46 +1,74 @@
+# CMakeLists.txt
 cmake_minimum_required(VERSION 3.20)
-project(TetrisEngine LANGUAGES CXX)
+project(Tetris VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-#==================================================
-# SFML (Чисте підключення)
-#==================================================
-set(SFML_DIR "C:/SFML/lib/cmake/SFML")
-find_package(SFML 3.1 COMPONENTS Graphics Window System REQUIRED)
-
-include_directories("${CMAKE_SOURCE_DIR}/src")
-
-#==================================================
-# SUBDIRECTORIES & EXECUTABLE
-#==================================================
-add_subdirectory(src/core)
-add_subdirectory(src/interfaces)
-add_subdirectory(src/model)
-add_subdirectory(src/services)
-add_subdirectory(src/view)
-add_subdirectory(src/controller)
-add_subdirectory(src/state)
-
-add_executable(Tetris src/main.cpp)
-
-set(PROJECT_MODULES TetrisController TetrisView TetrisState TetrisCore TetrisModel TetrisServices)
-target_link_libraries(Tetris PRIVATE ${PROJECT_MODULES})
-
-# Лінкуємо тільки через SFML::Target (це автоматично підтягне всі шляхи)
-foreach(MODULE ${PROJECT_MODULES})
-    target_link_libraries(${MODULE} PUBLIC SFML::Graphics SFML::Window SFML::System)
-endforeach()
-target_link_libraries(Tetris PRIVATE SFML::Graphics SFML::Window SFML::System)
-
-#==================================================
-# DLL КОПІЮВАННЯ
-#==================================================
-if(WIN32)
-    add_custom_command(TARGET Tetris POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/SFML/bin/sfml-graphics-3.dll" "$<TARGET_FILE_DIR:Tetris>/"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/SFML/bin/sfml-window-3.dll" "$<TARGET_FILE_DIR:Tetris>/"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "C:/SFML/bin/sfml-system-3.dll" "$<TARGET_FILE_DIR:Tetris>/"
-    )
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
+
+# ── Find SFML 3.x ─────────────────────────────────────────────────────────────
+find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
+
+# ── Sources ───────────────────────────────────────────────────────────────────
+set(SOURCES
+        src/main.cpp
+
+        src/core/Application.cpp
+        src/core/Application.h
+
+        src/controller/GameController.cpp
+        src/controller/GameController.h
+
+        src/model/board/Board.cpp
+        src/model/board/Board.h
+        src/model/game/Game.cpp
+        src/model/game/Game.h
+        src/model/hold/HoldSystem.cpp
+        src/model/hold/HoldSystem.h
+        src/model/level/LevelSystem.cpp
+        src/model/level/LevelSystem.h
+        src/model/queue/PieceQueue.cpp
+        src/model/queue/PieceQueue.h
+        src/model/score/ScoreSystem.cpp
+        src/model/score/ScoreSystem.h
+        src/model/statistics/StatisticsManager.cpp
+        src/model/statistics/StatisticsManager.h
+        src/model/tetromino/Tetromino.cpp
+        src/model/tetromino/Tetromino.h
+        src/model/tetromino/TetrominoFactory.cpp
+        src/model/tetromino/TetrominoFactory.h
+        src/model/timer/GameTimer.cpp
+        src/model/timer/GameTimer.h
+
+        src/view/GameOverView.cpp
+        src/view/GameOverView.h
+        src/view/GameView.cpp
+        src/view/GameView.h
+        src/view/MenuView.cpp
+        src/view/MenuView.h
+        src/view/StatisticsView.cpp
+        src/view/StatisticsView.h
+)
+
+add_executable(Tetris ${SOURCES})
+
+target_include_directories(Tetris PRIVATE src)
+
+# SFML 3.x uses namespaced targets
+target_link_libraries(Tetris PRIVATE
+        SFML::Graphics
+        SFML::Window
+        SFML::System
+)
+
+# Copy assets next to the binary
+add_custom_command(TARGET Tetris POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:Tetris>/assets
+        COMMENT "Copying assets..."
+)

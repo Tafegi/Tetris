@@ -1,122 +1,56 @@
+// src/view/GameOverView.cpp
 #include "GameOverView.h"
-#include <sstream>
+#include "model/game/Game.h"
+#include <string>
 
-namespace view
+GameOverView::GameOverView(sf::RenderWindow& window)
+    : m_window(window)
 {
-    static void drawButton(sf::RenderWindow& window, const sf::Font& font,
-                           const std::string& text, sf::FloatRect rect, bool hover)
+    if (!m_font.openFromFile("assets/fonts/Roboto-Regular.ttf"))
+        (void)m_font.openFromFile("C:/Windows/Fonts/arial.ttf");
+}
+
+sf::Text GameOverView::makeText(const std::string& str, unsigned int size, sf::Color color)
+{
+    sf::Text t(m_font, str, size);
+    t.setFillColor(color);
+    return t;
+}
+
+void GameOverView::render(const Game& game)
+{
+    // Overlay
+    sf::RectangleShape overlay(sf::Vector2f(
+        static_cast<float>(m_window.getSize().x),
+        static_cast<float>(m_window.getSize().y)));
+    overlay.setFillColor(sf::Color(0, 0, 0, 175));
+    m_window.draw(overlay);
+
+    const float cx = static_cast<float>(m_window.getSize().x) / 2.f;
+    const float cy = static_cast<float>(m_window.getSize().y) / 2.f;
+
+    auto centered = [&](const std::string& str, unsigned int size,
+                         sf::Color color, float y)
     {
-        sf::RectangleShape box(rect.size);
-        box.setPosition(rect.position);
-        box.setFillColor(hover ? sf::Color(60, 60, 120) : sf::Color(30, 30, 70));
-        box.setOutlineThickness(2.f);
-        box.setOutlineColor(hover ? sf::Color(140, 140, 255) : sf::Color(60, 60, 120));
-        window.draw(box);
+        auto t = makeText(str, size, color);
+        const sf::FloatRect b = t.getLocalBounds();
+        t.setOrigin({b.position.x + b.size.x / 2.f,
+                     b.position.y + b.size.y / 2.f});
+        t.setPosition({cx, y});
+        m_window.draw(t);
+    };
 
-        sf::Text label(font);
-        label.setCharacterSize(22);
-        label.setFillColor(sf::Color::White);
-        label.setString(text);
-        auto lb = label.getLocalBounds();
-        label.setOrigin({lb.size.x / 2.f, lb.size.y / 2.f});
-        label.setPosition({rect.position.x + rect.size.x / 2.f,
-                           rect.position.y + rect.size.y / 2.f});
-        window.draw(label);
-    }
+    centered("GAME OVER",
+             52, sf::Color(255, 80, 80),   cy - 80.f);
+    centered("Score: " + std::to_string(game.getScore().getScore()),
+             22, sf::Color(220, 220, 255), cy - 10.f);
+    centered("Best:  " + std::to_string(game.getScore().getHighScore()),
+             20, sf::Color(180, 180, 210), cy + 30.f);
+    centered("Lines: " + std::to_string(game.getLevel().getTotalLines()),
+             20, sf::Color(180, 180, 210), cy + 60.f);
+    centered("Level: " + std::to_string(game.getLevel().getLevel()),
+             20, sf::Color(180, 180, 210), cy + 90.f);
 
-    GameOverView::GameOverView(sf::RenderWindow& window)
-        : window_(window),
-          titleText_(font_),
-          statsText_(font_),
-          promptText_(font_)
-    {
-        font_.openFromFile("assets/fonts/Roboto-Regular.ttf");
-
-        titleText_.setCharacterSize(56);
-        titleText_.setString("GAME OVER");
-        titleText_.setFillColor(sf::Color(240, 60, 60));
-
-        statsText_.setCharacterSize(24);
-        statsText_.setFillColor(sf::Color::White);
-
-        promptText_.setCharacterSize(18);
-        promptText_.setFillColor(sf::Color(180, 180, 200));
-    }
-
-    sf::FloatRect GameOverView::playAgainRect() const
-    {
-        return sf::FloatRect({100.f, 400.f}, {200.f, 50.f});
-    }
-
-    sf::FloatRect GameOverView::mainMenuRect() const
-    {
-        return sf::FloatRect({320.f, 400.f}, {200.f, 50.f});
-    }
-
-    void GameOverView::render(const model::Game& game, const std::string& playerName)
-    {
-        window_.clear(sf::Color(10, 5, 5));
-        drawBackground();
-        drawTitle();
-        drawStats(game);
-        drawPrompt(playerName);
-        drawButtons();
-        window_.display();
-    }
-
-    void GameOverView::drawBackground()
-    {
-        sf::RectangleShape bg;
-        bg.setSize({(float)window_.getSize().x, (float)window_.getSize().y});
-        bg.setFillColor(sf::Color(12, 5, 8));
-        window_.draw(bg);
-    }
-
-    void GameOverView::drawTitle()
-    {
-        auto bounds = titleText_.getLocalBounds();
-        titleText_.setOrigin({bounds.size.x / 2.f, 0.f});
-        titleText_.setPosition({window_.getSize().x / 2.f, 80.f});
-        window_.draw(titleText_);
-    }
-
-    void GameOverView::drawStats(const model::Game& game)
-    {
-        std::ostringstream ss;
-        ss << "Score : " << game.score() << "\n"
-           << "Level : " << game.level() << "\n"
-           << "Lines : " << game.lines();
-        statsText_.setString(ss.str());
-        statsText_.setPosition({100.f, 200.f});
-        window_.draw(statsText_);
-    }
-
-    void GameOverView::drawPrompt(const std::string& playerName)
-    {
-        (void)playerName;
-        promptText_.setString("Press Enter or click Play Again to restart\nPress Escape or click Main Menu to go back");
-        promptText_.setPosition({100.f, 340.f});
-        window_.draw(promptText_);
-    }
-
-    void GameOverView::drawButtons()
-    {
-        sf::Vector2i mouse = sf::Mouse::getPosition(window_);
-        sf::Vector2f mf((float)mouse.x, (float)mouse.y);
-
-        drawButton(window_, font_, "Play Again", playAgainRect(),
-                   playAgainRect().contains(mf));
-        drawButton(window_, font_, "Main Menu",  mainMenuRect(),
-                   mainMenuRect().contains(mf));
-    }
-
-    bool GameOverView::handleMouseClick(sf::Vector2i pos,
-                                        bool& outPlayAgain,
-                                        bool& outMainMenu)
-    {
-        sf::Vector2f pf((float)pos.x, (float)pos.y);
-        outPlayAgain = playAgainRect().contains(pf);
-        outMainMenu  = mainMenuRect().contains(pf);
-        return outPlayAgain || outMainMenu;
-    }
+    centered("ENTER - New Game   S - Stats   ESC - Menu",
+             14, sf::Color(120, 120, 150), cy + 150.f);
 }

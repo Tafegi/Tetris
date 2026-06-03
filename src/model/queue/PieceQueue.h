@@ -1,30 +1,38 @@
+// src/model/queue/PieceQueue.h
 #pragma once
 
+#include "model/tetromino/Tetromino.h"
+#include "model/tetromino/TetrominoFactory.h"
 #include <deque>
-#include "../types/TetrominoType.h"
-#include "../random/RandomBagGenerator.h"
+#include <array>
+#include <random>
 
-namespace model
+/**
+ * @brief 7-bag randomiser with a visible "next" preview queue.
+ *
+ * The 7-bag system guarantees every piece type appears exactly once
+ * before any type repeats.  We maintain a lookahead of k_previewCount
+ * pieces so the view can draw the next-piece panel.
+ */
+class PieceQueue
 {
-    class PieceQueue
-    {
-    public:
-        PieceQueue();
+public:
+    static constexpr int k_previewCount = 5;
 
-        TetrominoType next();
-        TetrominoType peek(std::size_t index) const;
+    PieceQueue();
 
-        void refillIfNeeded();
-        void reset();
+    /// Pop the front piece (becomes the active piece).
+    [[nodiscard]] Tetromino pop();
 
-        std::size_t size() const noexcept;
+    /// Peek at the Nth upcoming piece (0 = next, k_previewCount-1 = furthest).
+    [[nodiscard]] const Tetromino& peek(int index) const;
 
-    private:
-        void fillQueue();
+    void reset();
 
-        static constexpr std::size_t QUEUE_SIZE = 6;
+private:
+    void refill();   // fill a new shuffled bag into the deque
 
-        std::deque<TetrominoType> queue_;
-        RandomBagGenerator generator_;
-    };
-}
+    std::deque<Tetromino>          m_queue;
+    std::array<TetrominoType, 7>   m_bag{};
+    std::mt19937                   m_rng;
+};

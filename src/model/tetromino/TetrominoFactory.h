@@ -1,14 +1,28 @@
+// src/model/tetromino/TetrominoFactory.h
 #pragma once
 
 #include "Tetromino.h"
+#include <memory>
 
-namespace model
+/**
+ * @brief Creates Tetromino instances from canonical SRS rotation tables.
+ *
+ * All rotation data is compiled into this translation unit so the rest
+ * of the codebase only calls TetrominoFactory::create(type).
+ */
+class TetrominoFactory
 {
-    class TetrominoFactory
-    {
-    public:
-        // BUG FIX: was declared `static` here but defined without `static`
-        // in the .cpp — that is a compile/link error. Removed static.
-        Tetromino create(TetrominoType type);
-    };
-}
+public:
+    TetrominoFactory()  = default;
+    ~TetrominoFactory() = default;
+
+    [[nodiscard]] static Tetromino create(TetrominoType type);
+
+    // SRS wall-kick data for JLSTZ pieces (spawn→CW, CW→spawn, CW→180, ...)
+    // Returns the 5 kick offsets for a given (fromRotation → toRotation) transition.
+    [[nodiscard]] static std::vector<Vec2i> getWallKicks(TetrominoType type,
+                                                          int fromRot,
+                                                          int toRot);
+private:
+    static sf::Color colorFor(TetrominoType type) noexcept;
+};

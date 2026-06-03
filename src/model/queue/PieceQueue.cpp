@@ -1,59 +1,47 @@
+// src/model/queue/PieceQueue.cpp
 #include "PieceQueue.h"
+#include <algorithm>
+#include <random>
+#include <chrono>
 
-namespace model
+PieceQueue::PieceQueue()
+    : m_rng(static_cast<uint32_t>(
+          std::chrono::steady_clock::now().time_since_epoch().count()))
 {
-    PieceQueue::PieceQueue()
-    {
-        fillQueue();
-    }
+    reset();
+}
 
-    TetrominoType PieceQueue::next()
-    {
-        refillIfNeeded();
+void PieceQueue::reset()
+{
+    m_queue.clear();
+    // Seed with enough pieces for preview + 1 active
+    while (static_cast<int>(m_queue.size()) < k_previewCount + 1)
+        refill();
+}
 
-        TetrominoType front = queue_.front();
-        queue_.pop_front();
+void PieceQueue::refill()
+{
+    // Build a canonical 7-bag
+    m_bag = { TetrominoType::I, TetrominoType::J, TetrominoType::L,
+              TetrominoType::O, TetrominoType::S, TetrominoType::T,
+              TetrominoType::Z };
+    std::shuffle(m_bag.begin(), m_bag.end(), m_rng);
 
-        queue_.push_back(generator_.next());
+    for (auto t : m_bag)
+        m_queue.push_back(TetrominoFactory::create(t));
+}
 
-        return front;
-    }
+Tetromino PieceQueue::pop()
+{
+    Tetromino front = std::move(m_queue.front());
+    m_queue.pop_front();
+    // Keep the queue topped up
+    if (static_cast<int>(m_queue.size()) < k_previewCount + 1)
+        refill();
+    return front;
+}
 
-    TetrominoType PieceQueue::peek(std::size_t index) const
-    {
-        if (index >= queue_.size())
-        {
-            return queue_.back();
-        }
-
-        return queue_[index];
-    }
-
-    void PieceQueue::refillIfNeeded()
-    {
-        while (queue_.size() < QUEUE_SIZE)
-        {
-            queue_.push_back(generator_.next());
-        }
-    }
-
-    void PieceQueue::reset()
-    {
-        queue_.clear();
-        generator_.reset();
-        fillQueue();
-    }
-
-    std::size_t PieceQueue::size() const noexcept
-    {
-        return queue_.size();
-    }
-
-    void PieceQueue::fillQueue()
-    {
-        while (queue_.size() < QUEUE_SIZE)
-        {
-            queue_.push_back(generator_.next());
-        }
-    }
+const Tetromino& PieceQueue::peek(int index) const
+{
+    return m_queue.at(static_cast<std::size_t>(index));
 }

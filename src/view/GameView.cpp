@@ -1,207 +1,221 @@
+// src/view/GameView.cpp
 #include "GameView.h"
-#include <sstream>
+#include "model/game/Game.h"
+#include "model/board/Board.h"
+#include "model/tetromino/Tetromino.h"
+#include <string>
 
-namespace view
+GameView::GameView(sf::RenderWindow& window)
+    : m_window(window)
 {
-    static sf::Color pieceColor(model::TetrominoType type)
+    // Graceful font fallback – ship a font in assets/ or use system font
+    if (!m_font.openFromFile("assets/fonts/Roboto-Regular.ttf"))
+        m_font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+
+    m_cellShape.setSize({k_cellSize - 1.f, k_cellSize - 1.f});
+
+    m_boardBorder.setSize({k_cellSize * Board::k_cols + 2.f,
+                           k_cellSize * k_visibleRows + 2.f});
+    m_boardBorder.setPosition({k_boardLeft - 1.f, k_boardTop - 1.f});
+    m_boardBorder.setFillColor(sf::Color::Transparent);
+    m_boardBorder.setOutlineColor(sf::Color(80, 80, 100));
+    m_boardBorder.setOutlineThickness(1.f);
+}
+
+void GameView::render(const Game& game)
+{
+    drawBoard(game);
+    drawGhostPiece(game);
+    drawActivePiece(game);
+    drawHUD(game);
+    drawNextPanel(game);
+    drawHoldPanel(game);
+    m_window.draw(m_boardBorder);
+
+    if (game.isPaused())
+        drawPausedOverlay();
+}
+
+void GameView::drawCell(int col, int row, sf::Color color, float alpha)
+{
+    const float px = k_boardLeft + col * k_cellSize;
+    const float py = k_boardTop  + (row - Board::k_hiddenRows) * k_cellSize;
+
+    color.a = static_cast<uint8_t>(255.f * alpha);
+    m_cellShape.setPosition({px, py});
+    m_cellShape.setFillColor(color);
+    // Subtle highlight on top-left edges
+    m_cellShape.setOutlineColor(sf::Color(255, 255, 255, 30));
+    m_cellShape.setOutlineThickness(-1.f);
+    m_window.draw(m_cellShape);
+}
+
+void GameView::drawBoard(const Game& game)
+{
+    const auto& board = game.getBoard();
+    // Grid lines
+    for (int r = 0; r < k_visibleRows; ++r)
     {
-        switch (type)
+        for (int c = 0; c < Board::k_cols; ++c)
         {
-            case model::TetrominoType::I: return sf::Color(0, 240, 240);
-            case model::TetrominoType::O: return sf::Color(240, 240, 0);
-            case model::TetrominoType::T: return sf::Color(160, 0, 240);
-            case model::TetrominoType::S: return sf::Color(0, 240, 0);
-            case model::TetrominoType::Z: return sf::Color(240, 0, 0);
-            case model::TetrominoType::J: return sf::Color(0, 0, 240);
-            case model::TetrominoType::L: return sf::Color(240, 160, 0);
+            const int boardRow = r + Board::k_hiddenRows;
+            if (board.isOccupied(c, boardRow))
+            {
+                drawCell(c, boardRow, board.getColor(c, boardRow));
+            }
+            else
+            {
+                // dim grid dot
+                sf::CircleShape dot(1.f);
+                dot.setFillColor(sf::Color(40, 40, 55));
+                dot.setPosition({k_boardLeft + c * k_cellSize + k_cellSize * 0.5f - 1.f,
+                                k_boardTop  + r * k_cellSize + k_cellSize * 0.5f - 1.f});
+                m_window.draw(dot);
+            }
         }
-        return sf::Color::White;
     }
+}
 
-    static constexpr float BLOCK   = 30.f;
-    static constexpr float BOARD_X = 250.f;
-    static constexpr float BOARD_Y = 20.f;
-
-    GameView::GameView(sf::RenderWindow& window)
-        : window_(window)
+void GameView::drawActivePiece(const Game& game)
+{
+    for (const auto& cell : game.getActivePiece().getAbsoluteCells())
     {
-        blockShape_.setSize({BLOCK - 1.f, BLOCK - 1.f});
-        ghostShape_.setSize({BLOCK - 1.f, BLOCK - 1.f});
-        ghostShape_.setOutlineThickness(1.f);
-
-        font_.openFromFile("assets/fonts/Roboto-Regular.ttf");
+        if (cell.y < Board::k_hiddenRows) continue;
+        drawCell(cell.x, cell.y, game.getActivePiece().getColor());
     }
+}
 
-    void GameView::render(const model::Game& game)
+void GameView::drawGhostPiece(const Game& game)
+{
+    const Tetromino ghost = game.getGhostPiece();
+    sf::Color ghostColor  = ghost.getColor();
+    for (const auto& cell : ghost.getAbsoluteCells())
     {
-        // draw dark background
-        sf::RectangleShape bg;
-        bg.setSize({(float)window_.getSize().x, (float)window_.getSize().y});
-        bg.setFillColor(sf::Color(15, 15, 25));
-        window_.draw(bg);
-
-        drawBoardBorder();
-        drawBoard(game.board());
-        drawGhost(game.activePiece(), game.board());
-        drawPiece(game.activePiece());
-        drawHUD(game);
-        animationSystem_.draw(window_);
-        window_.display();
+        if (cell.y < Board::k_hiddenRows) continue;
+        drawCell(cell.x, cell.y, ghostColor, 0.25f);
     }
+}
 
-    void GameView::update(float dt)
+void GameView::drawPiecePreview(const Tetromino& piece, float originX, float originY)
+{
+    for (const auto& cell : piece.getCells())
     {
-        animationSystem_.update(dt);
+        sf::RectangleShape s({k_cellSize - 1.f, k_cellSize - 1.f});
+        s.setPosition({originX + cell.x * k_cellSize,
+                      originY + cell.y * k_cellSize});
+        s.setFillColor(piece.getColor());
+        s.setOutlineColor(sf::Color(255, 255, 255, 30));
+        s.setOutlineThickness(-1.f);
+        m_window.draw(s);
     }
+}
 
-    void GameView::drawBoardBorder()
+void GameView::drawNextPanel(const Game& game)
+{
+    const float panelX = k_boardLeft + Board::k_cols * k_cellSize + 20.f;
+    float       panelY = k_boardTop;
+
+    // Label
+    sf::Text label(m_font, "NEXT", 14);
+    label.setFillColor(sf::Color(180, 180, 200));
+    label.setPosition({panelX, panelY});
+    m_window.draw(label);
+    panelY += 24.f;
+
+    for (int i = 0; i < PieceQueue::k_previewCount; ++i)
     {
-        float w = model::Board::WIDTH  * BLOCK;
-        float h = model::Board::HEIGHT * BLOCK;
+        const Tetromino& piece = game.getQueue().peek(i);
+        drawPiecePreview(piece, panelX, panelY);
+        panelY += k_cellSize * 3.f;
+    }
+}
 
-        // grid lines
-        sf::RectangleShape line;
-        line.setFillColor(sf::Color(35, 35, 55));
-        for (int x = 0; x <= model::Board::WIDTH; ++x)
+void GameView::drawHoldPanel(const Game& game)
+{
+    const float panelX = k_boardLeft - 5 * k_cellSize - 10.f;
+    float       panelY = k_boardTop;
+
+    sf::Text label(m_font, "HOLD", 14);
+    label.setFillColor(sf::Color(180, 180, 200));
+    label.setPosition({panelX, panelY});
+    m_window.draw(label);
+    panelY += 24.f;
+
+    const auto& hold = game.getHold();
+    if (hold.hasHeld())
+    {
+        const float alpha = hold.isLocked() ? 0.4f : 1.0f;
+        const Tetromino& held = hold.getHeld();
+
+        for (const auto& cell : held.getCells())
         {
-            line.setSize({1.f, h});
-            line.setPosition({BOARD_X + x * BLOCK, BOARD_Y});
-            window_.draw(line);
+            sf::RectangleShape s({k_cellSize - 1.f, k_cellSize - 1.f});
+            sf::Color c = held.getColor();
+            c.a = static_cast<uint8_t>(255.f * alpha);
+            s.setPosition({panelX + cell.x * k_cellSize,
+                           panelY + cell.y * k_cellSize});
+            s.setFillColor(c);
+            s.setOutlineColor(sf::Color(255, 255, 255, 20));
+            s.setOutlineThickness(-1.f);
+            m_window.draw(s);
         }
-        for (int y = 0; y <= model::Board::HEIGHT; ++y)
-        {
-            line.setSize({w, 1.f});
-            line.setPosition({BOARD_X, BOARD_Y + y * BLOCK});
-            window_.draw(line);
-        }
-
-        // border
-        sf::RectangleShape border({w + 4.f, h + 4.f});
-        border.setPosition({BOARD_X - 2.f, BOARD_Y - 2.f});
-        border.setFillColor(sf::Color::Transparent);
-        border.setOutlineThickness(2.f);
-        border.setOutlineColor(sf::Color(80, 80, 140));
-        window_.draw(border);
     }
+}
 
-    void GameView::drawBoard(const model::Board& board)
+void GameView::drawHUD(const Game& game)
+{
+    const float hudX = k_boardLeft - 5 * k_cellSize - 10.f;
+    float       hudY = k_boardTop + 4 * k_cellSize + 20.f;
+
+    auto drawLine = [&](const std::string& label, const std::string& value)
     {
-        const auto& grid = board.grid();
-        for (std::size_t y = 0; y < grid.size(); ++y)
-            for (std::size_t x = 0; x < grid[y].size(); ++x)
-            {
-                if (!grid[y][x].occupied) continue;
-                blockShape_.setFillColor(pieceColor(grid[y][x].type));
-                blockShape_.setPosition(toScreen((int)x, (int)y));
-                window_.draw(blockShape_);
-            }
-    }
+        sf::Text tLabel(m_font, label, 12);
+        tLabel.setFillColor(sf::Color(140, 140, 160));
+        tLabel.setPosition({hudX, hudY});
+        m_window.draw(tLabel);
+        hudY += 16.f;
 
-    void GameView::drawPiece(const model::Tetromino& piece)
-    {
-        const auto& shape = piece.shape();
-        const auto  pos   = piece.position();
-        sf::Color   color = pieceColor(piece.type());
-        for (int y = 0; y < model::Tetromino::SIZE; ++y)
-            for (int x = 0; x < model::Tetromino::SIZE; ++x)
-            {
-                if (shape[y][x] == 0) continue;
-                blockShape_.setFillColor(color);
-                blockShape_.setPosition(toScreen(pos.x + x, pos.y + y));
-                window_.draw(blockShape_);
-            }
-    }
+        sf::Text tValue(m_font, value, 18);
+        tValue.setFillColor(sf::Color(230, 230, 255));
+        tValue.setPosition({hudX, hudY});
+        m_window.draw(tValue);
+        hudY += 28.f;
+    };
 
-    void GameView::drawGhost(const model::Tetromino& piece, const model::Board& board)
-    {
-        model::Tetromino ghost = piece;
-        while (!board.isCollision(ghost)) ghost.move(0, 1);
-        ghost.move(0, -1);
+    drawLine("SCORE",    std::to_string(game.getScore().getScore()));
+    drawLine("BEST",     std::to_string(game.getScore().getHighScore()));
+    drawLine("LEVEL",    std::to_string(game.getLevel().getLevel()));
+    drawLine("LINES",    std::to_string(game.getLevel().getTotalLines()));
 
-        sf::Color gc = pieceColor(piece.type());
-        gc.a = 55;
-        ghostShape_.setFillColor(gc);
-        ghostShape_.setOutlineColor(sf::Color(gc.r, gc.g, gc.b, 140));
+    // Controls hint (bottom of window)
+    const float hintY = 640.f;
+    const std::string hint =
+        "[←→] Move  [↑/X] CW  [Z] CCW  [Space] Drop  [C] Hold  [P] Pause";
+    sf::Text hintText(m_font, hint, 10);
+    hintText.setFillColor(sf::Color(80, 80, 100));
+    hintText.setPosition({10.f, hintY});
+    m_window.draw(hintText);
+}
 
-        const auto& shape = ghost.shape();
-        const auto  pos   = ghost.position();
-        for (int y = 0; y < model::Tetromino::SIZE; ++y)
-            for (int x = 0; x < model::Tetromino::SIZE; ++x)
-            {
-                if (shape[y][x] == 0) continue;
-                ghostShape_.setPosition(toScreen(pos.x + x, pos.y + y));
-                window_.draw(ghostShape_);
-            }
-    }
+void GameView::drawPausedOverlay()
+{
+    // Semi-transparent overlay
+    sf::RectangleShape overlay({static_cast<float>(m_window.getSize().x),
+                                static_cast<float>(m_window.getSize().y)});
+    overlay.setFillColor(sf::Color(0, 0, 0, 150));
+    m_window.draw(overlay);
 
-    void GameView::drawHUD(const model::Game& game)
-    {
-        float panelX = BOARD_X + model::Board::WIDTH * BLOCK + 20.f;
+    sf::Text text(m_font, "PAUSED", 48);
+    text.setFillColor(sf::Color::White);
+    const sf::FloatRect bounds = text.getLocalBounds();
+    text.setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
+    text.setPosition({m_window.getSize().x / 2.f, m_window.getSize().y / 2.f});
+    m_window.draw(text);
 
-        // --- Right panel: Score/Level/Lines ---
-        sf::Text info(font_);
-        info.setCharacterSize(20);
-        info.setFillColor(sf::Color::White);
-
-        std::ostringstream ss;
-        ss << "SCORE\n" << game.score()
-           << "\n\nLEVEL\n"  << game.level()
-           << "\n\nLINES\n"  << game.lines();
-        info.setString(ss.str());
-        info.setPosition({panelX, BOARD_Y + 10.f});
-        window_.draw(info);
-
-        // --- Controls hint ---
-        sf::Text hint(font_);
-        hint.setCharacterSize(14);
-        hint.setFillColor(sf::Color(120, 120, 150));
-        hint.setString("Arrows - move\nUp     - rotate\nSpace  - hard drop\nDown   - soft drop\nC      - hold\nEsc    - pause");
-        hint.setPosition({panelX, BOARD_Y + 310.f});
-        window_.draw(hint);
-
-        // --- NEXT queue ---
-        sf::Text nextLbl(font_);
-        nextLbl.setCharacterSize(16);
-        nextLbl.setFillColor(sf::Color(180, 180, 220));
-        nextLbl.setString("NEXT");
-        nextLbl.setPosition({panelX, BOARD_Y + 200.f});
-        window_.draw(nextLbl);
-
-        for (std::size_t i = 0; i < 3 && i < game.queue().size(); ++i)
-            drawMiniPiece(game.queue().peek(i), panelX, BOARD_Y + 225.f + i * 80.f);
-
-        // --- HOLD ---
-        sf::Text holdLbl(font_);
-        holdLbl.setCharacterSize(16);
-        holdLbl.setFillColor(sf::Color(180, 180, 220));
-        holdLbl.setString("HOLD");
-        holdLbl.setPosition({BOARD_X - 120.f, BOARD_Y + 10.f});
-        window_.draw(holdLbl);
-
-        if (game.hasHeldPiece())
-            drawMiniPiece(game.heldPiece(), BOARD_X - 120.f, BOARD_Y + 38.f);
-    }
-
-    void GameView::drawMiniPiece(model::TetrominoType type, float px, float py)
-    {
-        model::Tetromino mini(type);
-        const auto& shape = mini.shape();
-        sf::Color color = pieceColor(type);
-
-        sf::RectangleShape blk({20.f, 20.f});
-        blk.setFillColor(color);
-
-        for (int y = 0; y < model::Tetromino::SIZE; ++y)
-            for (int x = 0; x < model::Tetromino::SIZE; ++x)
-            {
-                if (shape[y][x] == 0) continue;
-                blk.setPosition({px + x * 21.f, py + y * 21.f});
-                window_.draw(blk);
-            }
-    }
-
-    sf::Vector2f GameView::toScreen(int x, int y) const
-    {
-        return {BOARD_X + x * BLOCK, BOARD_Y + y * BLOCK};
-    }
+    sf::Text sub(m_font, "Press P or ESC to resume", 16);
+    sub.setFillColor(sf::Color(180, 180, 200));
+    const sf::FloatRect sb = sub.getLocalBounds();
+    sub.setOrigin({sb.size.x / 2.f, sb.size.y / 2.f});
+    sub.setPosition({m_window.getSize().x / 2.f, m_window.getSize().y / 2.f + 60.f});
+    m_window.draw(sub);
 }

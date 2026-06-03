@@ -1,34 +1,33 @@
+// src/model/hold/HoldSystem.h
 #pragma once
 
-#include "../types/TetrominoType.h"
+#include "model/tetromino/Tetromino.h"
+#include <optional>
 
-namespace model
+/**
+ * @brief Manages the hold slot (one piece can be stored / swapped).
+ *
+ * Per the Guideline, the player may only hold once per piece placement.
+ * The lock is cleared when a new piece is spawned.
+ */
+class HoldSystem
 {
-    class HoldSystem
-    {
-    public:
-        HoldSystem();
+public:
+    HoldSystem() = default;
 
-        // Returns true if hold is allowed this piece
-        bool canHold() const noexcept;
+    /// Returns true if the hold was performed (false if locked this turn).
+    bool hold(Tetromino& activePiece, Tetromino nextFromQueue);
 
-        // Performs hold: returns the type that should become active.
-        // If nothing was held yet, stores current and returns current
-        // (caller should spawn next from queue instead).
-        TetrominoType hold(TetrominoType current);
+    /// Allow holding again (call when a new piece spawns from the queue).
+    void unlock() noexcept;
 
-        // BUG FIX: must be called each time a new piece spawns
-        // so the player can hold once per piece (not once per game)
-        void resetTurn();
+    void reset() noexcept;
 
-        void reset();
+    [[nodiscard]] bool                    hasHeld()    const noexcept;
+    [[nodiscard]] const Tetromino&        getHeld()    const;
+    [[nodiscard]] bool                    isLocked()   const noexcept { return m_locked; }
 
-        bool hasHeld() const noexcept;
-        TetrominoType heldType() const noexcept;
-
-    private:
-        bool usedThisTurn_;
-        bool hasHeld_;
-        TetrominoType heldType_;
-    };
-}
+private:
+    std::optional<Tetromino> m_held;
+    bool                     m_locked{false};
+};

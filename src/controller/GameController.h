@@ -1,60 +1,62 @@
+// src/controller/GameController.h
 #pragma once
-
-#include <memory>
-#include <SFML/Graphics.hpp>
 
 #include "model/game/Game.h"
 #include "view/GameView.h"
 #include "view/GameOverView.h"
 #include "view/MenuView.h"
-#include "view/PauseView.h"
 #include "view/StatisticsView.h"
-#include "view/SettingsView.h"
-#include "model/statistics/StatisticsManager.h"
-#include "model/highscore/HighScoreManager.h"
 
-#include "InputController.h"
-#include "StateMachine.h"
+#include <SFML/Graphics.hpp>
+#include <memory>
 
-namespace controller
+/**
+ * @brief Manages application state and routes input/update/render calls.
+ *
+ * States: Menu → Playing → GameOver → Statistics → Menu (loop)
+ */
+class GameController
 {
-    class GameController
-    {
-    public:
-        explicit GameController(sf::RenderWindow& window);
-        ~GameController();
+public:
+    explicit GameController(sf::RenderWindow& window);
 
-        void handleEvent(const sf::Event& event);
-        void update(float dt);
-        void render();
+    void handleEvent(const sf::Event& event);
+    void update(float deltaTime);
+    void render();
 
-        StateMachine& stateMachine() { return stateMachine_; }
+private:
+    enum class AppState { Menu, Playing, Paused, GameOver, Statistics };
 
-    private:
-        void updateGame(float dt);
-        void updateMenu(float dt);
-        void updatePause(float dt);
-        void updateGameOver(float dt);
+    void transitionTo(AppState next);
 
-        void executeMenuOption(view::MenuOption opt);
-        void saveScore();
+    // ── Input routing ──────────────────────────────────────────────────────
+    void handleMenuEvent    (const sf::Event& event);
+    void handlePlayingEvent (const sf::Event& event);
+    void handleGameOverEvent(const sf::Event& event);
+    void handleStatsEvent   (const sf::Event& event);
 
-    private:
-        sf::RenderWindow& window_;
+    // ── Auto-repeat for held movement keys ────────────────────────────────
+    void updateAutoRepeat(float deltaTime);
 
-        model::Game game_;
+    sf::RenderWindow& m_window;
 
-        view::GameView       gameView_;
-        view::MenuView       menuView_;
-        view::PauseView      pauseView_;
-        view::GameOverView   gameOverView_;
-        view::StatisticsView statisticsView_;
-        view::SettingsView   settingsView_;
+    AppState          m_state{AppState::Menu};
 
-        model::StatisticsManager statisticsManager_;
-        model::HighScoreManager  highScoreManager_;
+    Game              m_game;
 
-        InputController input_;
-        StateMachine    stateMachine_;
-    };
-}
+    // Views – constructed once, reused
+    std::unique_ptr<MenuView>       m_menuView;
+    std::unique_ptr<GameView>       m_gameView;
+    std::unique_ptr<GameOverView>   m_gameOverView;
+    std::unique_ptr<StatisticsView> m_statsView;
+
+    // Auto-repeat (DAS / ARR)
+    static constexpr float k_dasDelay = 0.170f; // Delayed Auto Shift
+    static constexpr float k_arrRate  = 0.033f; // Auto Repeat Rate
+
+    bool  m_leftHeld{false};
+    bool  m_rightHeld{false};
+    float m_dasAccum{0.0f};
+    float m_arrAccum{0.0f};
+    bool  m_dasTriggered{false};
+};

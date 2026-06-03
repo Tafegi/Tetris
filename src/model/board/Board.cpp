@@ -1,124 +1,85 @@
+// src/model/board/Board.cpp
 #include "Board.h"
 #include <algorithm>
 
-namespace model
+Board::Board()
 {
-    Board::Board()
-    {
-        grid_.resize(HEIGHT, std::vector<Cell>(WIDTH));
-        clear();
-    }
+    reset();
+}
 
-    void Board::clear()
+void Board::reset()
+{
+    for (auto& row : m_grid)
+        row.fill(k_empty);
+}
+
+bool Board::isInBounds(int col, int row) const noexcept
+{
+    return col >= 0 && col < k_cols && row >= 0 && row < k_rows;
+}
+
+bool Board::isOccupied(int col, int row) const noexcept
+{
+    if (!isInBounds(col, row)) return true; // treat OOB as occupied
+    return m_grid[row][col].a != 0;
+}
+
+sf::Color Board::getColor(int col, int row) const noexcept
+{
+    if (!isInBounds(col, row)) return k_empty;
+    return m_grid[row][col];
+}
+
+bool Board::canPlace(const Tetromino& piece) const noexcept
+{
+    for (const auto& cell : piece.getAbsoluteCells())
     {
-        for (auto& row : grid_)
+        if (cell.x < 0 || cell.x >= k_cols) return false;
+        if (cell.y >= k_rows)               return false;
+        // Allow cells above the board (during spawn)
+        if (cell.y < 0)                     continue;
+        if (isOccupied(cell.x, cell.y))     return false;
+    }
+    return true;
+}
+
+void Board::lockPiece(const Tetromino& piece)
+{
+    for (const auto& cell : piece.getAbsoluteCells())
+    {
+        if (!isInBounds(cell.x, cell.y)) continue;
+        m_grid[cell.y][cell.x] = piece.getColor();
+    }
+}
+
+int Board::clearFullRows()
+{
+    int cleared = 0;
+    for (int row = k_rows - 1; row >= 0; )
+    {
+        bool full = std::all_of(m_grid[row].begin(), m_grid[row].end(),
+                                [](const sf::Color& c){ return c.a != 0; });
+        if (full)
         {
-            std::fill(row.begin(), row.end(), Cell{});
+            // Shift everything above down by one
+            for (int r = row; r > 0; --r)
+                m_grid[r] = m_grid[r - 1];
+            m_grid[0].fill(k_empty);
+            ++cleared;
+            // Don't advance row index – re-check same row after shift
+        }
+        else
+        {
+            --row;
         }
     }
+    return cleared;
+}
 
-    const Board::Grid& Board::grid() const noexcept
-    {
-        return grid_;
-    }
-
-    bool Board::isInside(int x, int y) const
-    {
-        return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;
-    }
-
-    bool Board::isCollision(const Tetromino& piece) const
-    {
-        const auto& shape = piece.shape();
-        const auto pos = piece.position();
-
-        for (int y = 0; y < Tetromino::SIZE; ++y)
-        {
-            for (int x = 0; x < Tetromino::SIZE; ++x)
-            {
-                if (shape[y][x] == 0)
-                    continue;
-
-                int bx = pos.x + x;
-                int by = pos.y + y;
-
-                if (bx < 0 || bx >= WIDTH || by >= HEIGHT)
-                    return true;
-
-                if (by < 0)
-                    continue;
-
-                // Якщо клітинка на полі вже зайнята
-                if (grid_[by][bx].occupied)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    void Board::lock(const Tetromino& piece)
-    {
-        const auto& shape = piece.shape();
-        const auto pos = piece.position();
-
-        for (int y = 0; y < Tetromino::SIZE; ++y)
-        {
-            for (int x = 0; x < Tetromino::SIZE; ++x)
-            {
-                if (shape[y][x] == 0)
-                    continue;
-
-                int bx = pos.x + x;
-                int by = pos.y + y;
-
-                if (!isInside(bx, by))
-                    continue;
-
-                // Фіксуємо блок: виставляємо occupied = true та тип фігури
-                grid_[by][bx].occupied = true;
-                grid_[by][bx].type = piece.type();
-            }
-        }
-    }
-
-    std::vector<int> Board::clearLines()
-    {
-        std::vector<int> cleared;
-
-        for (int y = 0; y < HEIGHT; ++y)
-        {
-            bool full = true;
-
-            for (int x = 0; x < WIDTH; ++x)
-            {
-                // Якщо хоч одна клітинка в рядку порожня
-                if (!grid_[y][x].occupied)
-                {
-                    full = false;
-                    break;
-                }
-            }
-
-            if (full)
-            {
-                cleared.push_back(y);
-            }
-        }
-
-        // Видаляємо лінії знизу вгору
-        for (int i = static_cast<int>(cleared.size()) - 1; i >= 0; --i)
-        {
-            int row = cleared[i];
-
-            for (int y = row; y > 0; --y)
-            {
-                grid_[y] = grid_[y - 1];
-            }
-
-            std::fill(grid_[0].begin(), grid_[0].end(), Cell{});
-        }
-
-        return cleared;
-    }
+Tetromino Board::hardDropPosition(const Tetromino& piece) const noexcept
+{
+    Tetromino dropped = piece;
+    while (canPlace(dropped.moved(0, 1)))
+        dropped = dropped.moved(0, 1);
+    return dropped;
 }

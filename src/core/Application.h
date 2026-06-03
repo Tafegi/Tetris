@@ -1,33 +1,31 @@
+// src/core/Application.h
 #pragma once
 
-#include <memory>
 #include <SFML/Graphics.hpp>
-#include "Logger.h"
+#include <memory>
 
-namespace controller
+class GameController;
+
+class Application
 {
-    class GameController;
-}
+public:
+    Application();
+    ~Application(); // defined in .cpp where GameController is complete
 
-namespace core
-{
-    class Application
-    {
-    public:
-        Application();
-        ~Application();
+    Application(const Application&)            = delete;
+    Application& operator=(const Application&) = delete;
 
-        void run();
+    void run();
 
-    private:
-        void processEvents();
-        void update(float dt);
-        void render();
+private:
+    void processEvents();
+    void update(float deltaTime);
+    void render();
 
-    private:
-        bool running_{true};
-        std::unique_ptr<Logger> logger_;
-        sf::RenderWindow window_;
-        std::unique_ptr<controller::GameController> controller_;
-    };
-}
+    sf::RenderWindow                m_window;
+    std::unique_ptr<GameController> m_controller;
+
+    static constexpr unsigned int k_windowWidth  = 800;
+    static constexpr unsigned int k_windowHeight = 700;
+    static constexpr unsigned int k_fps          = 60;
+};

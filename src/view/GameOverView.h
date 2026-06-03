@@ -1,42 +1,17 @@
+// src/view/GameOverView.h
 #pragma once
-
 #include <SFML/Graphics.hpp>
-#include <string>
-#include <functional>
 
-#include "../model/game/Game.h"
-#include "../model/highscore/HighScoreManager.h"
+class Game;
 
-namespace view
+class GameOverView
 {
-    class GameOverView
-    {
-    public:
-        explicit GameOverView(sf::RenderWindow& window);
+public:
+    explicit GameOverView(sf::RenderWindow& window);
+    void render(const Game& game);
 
-        // callback: called when player confirms name to save score
-        void render(const model::Game& game, const std::string& playerName);
-
-        // returns true if a clickable button was hit
-        bool handleMouseClick(sf::Vector2i pos,
-                              bool& outPlayAgain,
-                              bool& outMainMenu);
-
-    private:
-        void drawBackground();
-        void drawTitle();
-        void drawStats(const model::Game& game);
-        void drawButtons();
-        void drawPrompt(const std::string& playerName);
-
-        sf::FloatRect playAgainRect() const;
-        sf::FloatRect mainMenuRect() const;
-
-    private:
-        sf::RenderWindow& window_;
-        sf::Font font_;
-        sf::Text titleText_;
-        sf::Text statsText_;
-        sf::Text promptText_;
-    };
-}
+private:
+    sf::Text makeText(const std::string& str, unsigned int size, sf::Color color);
+    sf::RenderWindow& m_window;
+    sf::Font          m_font;
+};

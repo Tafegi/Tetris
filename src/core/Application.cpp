@@ -1,74 +1,49 @@
+// src/core/Application.cpp
 #include "Application.h"
-#include "Logger.h"
 #include "controller/GameController.h"
 
-#include <chrono>
+// Destructor here — GameController is fully defined in this translation unit
+Application::~Application() = default;
 
-namespace core
+Application::Application()
+    : m_window(sf::VideoMode({k_windowWidth, k_windowHeight}), "Tetris")
 {
-    Application::Application()
-        : logger_(std::make_unique<Logger>("logs.txt"))
-        , window_(sf::VideoMode({1280u, 720u}), "Tetris")
-        , controller_(std::make_unique<controller::GameController>(window_))
+    m_window.setFramerateLimit(k_fps);
+    m_controller = std::make_unique<GameController>(m_window);
+}
+
+void Application::run()
+{
+    sf::Clock clock;
+    while (m_window.isOpen())
     {
-        window_.setFramerateLimit(60);
-        logger_->info("Application started");
+        const float deltaTime = clock.restart().asSeconds();
+        processEvents();
+        update(deltaTime);
+        render();
     }
+}
 
-    Application::~Application()
+void Application::processEvents()
+{
+    // SFML 3: pollEvent() returns std::optional<sf::Event>
+    while (const std::optional<sf::Event> event = m_window.pollEvent())
     {
-        logger_->info("Application shutdown");
+        if (event->is<sf::Event::Closed>())
+            m_window.close();
+
+        m_controller->handleEvent(*event);
     }
+}
 
-    void Application::run()
-    {
-        using clock = std::chrono::high_resolution_clock;
-        auto lastTime = clock::now();
+void Application::update(float deltaTime)
+{
+    m_controller->update(deltaTime);
+}
 
-        while (running_ && window_.isOpen())
-        {
-            auto now = clock::now();
-            std::chrono::duration<float> delta = now - lastTime;
-            lastTime = now;
-
-            processEvents();
-
-            if (controller_->stateMachine().shouldExit())
-            {
-                running_ = false;
-                window_.close();
-                break;
-            }
-
-            update(delta.count());
-            render();
-        }
-    }
-
-    void Application::processEvents()
-    {
-        while (const std::optional event = window_.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-            {
-                running_ = false;
-                window_.close();
-                return;
-            }
-
-            controller_->handleEvent(*event);
-        }
-    }
-
-    void Application::update(float dt)
-    {
-        if (controller_)
-            controller_->update(dt);
-    }
-
-    void Application::render()
-    {
-        if (controller_)
-            controller_->render();
-    }
+void Application::render()
+{
+    m_window.clear(sf::Color(15, 15, 25));
+    m_controller->render();
+    m_window.display();
 }

@@ -1,60 +1,28 @@
+// src/model/level/LevelSystem.cpp
 #include "LevelSystem.h"
+#include <algorithm>
+#include <cmath>
 
-namespace model
+void LevelSystem::addLines(int lines) noexcept
 {
-    LevelSystem::LevelSystem()
-        : level_(0),
-          totalLines_(0)
-    {
-    }
+    m_totalLines += lines;
+    updateLevel();
+}
 
-    void LevelSystem::reset()
-    {
-        level_ = 0;
-        totalLines_ = 0;
-    }
+void LevelSystem::reset() noexcept
+{
+    m_totalLines = 0;
+    m_level      = 1;
+}
 
-    void LevelSystem::addLines(int linesCleared)
-    {
-        if (linesCleared <= 0)
-            return;
+void LevelSystem::updateLevel() noexcept
+{
+    m_level = std::min(m_totalLines / 10 + 1, k_maxLevel);
+}
 
-        totalLines_ += linesCleared;
-
-        updateLevel();
-    }
-
-    void LevelSystem::updateLevel()
-    {
-        // Classic guideline: level increases every 10 lines
-        level_ = totalLines_ / 10;
-    }
-
-    std::int32_t LevelSystem::level() const noexcept
-    {
-        return level_;
-    }
-
-    std::int32_t LevelSystem::totalLines() const noexcept
-    {
-        return totalLines_;
-    }
-
-    double LevelSystem::gravity() const noexcept
-    {
-        // simplified guideline gravity curve
-        // higher level → faster drop
-
-        const double base = 1.0;
-        const double factor = 0.8;
-
-        double speed = base;
-
-        for (int i = 0; i < level_; ++i)
-        {
-            speed *= factor;
-        }
-
-        return speed < 0.05 ? 0.05 : speed;
-    }
+float LevelSystem::getDropInterval() const noexcept
+{
+    // Guideline: frames = (0.8 - (level-1)*0.007)^(level-1) at 60fps
+    const double frames = std::pow(0.8 - (m_level - 1) * 0.007, m_level - 1);
+    return static_cast<float>(frames); // already in seconds at 60fps base
 }

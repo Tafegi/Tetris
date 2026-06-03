@@ -1,29 +1,22 @@
+// src/view/StatisticsView.h
 #pragma once
-
 #include <SFML/Graphics.hpp>
-#include <string>
 
-#include "../model/statistics/StatisticsManager.h"
+class StatisticsManager;
+class ScoreSystem;
+class LevelSystem;
 
-namespace view
+class StatisticsView
 {
-    class StatisticsView
-    {
-    public:
-        explicit StatisticsView(sf::RenderWindow& window);
+public:
+    explicit StatisticsView(sf::RenderWindow& window);
 
-        void render(const model::StatisticsManager& stats);
+    void render(const StatisticsManager& stats,
+                const ScoreSystem&       score,
+                const LevelSystem&       level);
 
-    private:
-        void drawBackground();
-        void drawTitle();
-        void drawStats(const model::StatisticsManager& stats);
-
-    private:
-        sf::RenderWindow& window_;
-        sf::Font font_;
-
-        sf::Text title_;
-        sf::Text statsText_;
-    };
-}
+private:
+    sf::Text makeText(const std::string& str, unsigned int size, sf::Color color);
+    sf::RenderWindow& m_window;
+    sf::Font          m_font;
+};

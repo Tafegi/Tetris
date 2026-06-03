@@ -1,28 +1,32 @@
+// src/model/level/LevelSystem.h
 #pragma once
-
 #include <cstdint>
 
-namespace model
+/**
+ * @brief Tracks total lines cleared and derives the current level.
+ *
+ * Uses Guideline progression: level = (totalLines / 10) + 1, capped at 15.
+ * Drop interval follows the Guideline formula (frames at 60 fps then converted).
+ */
+class LevelSystem
 {
-    class LevelSystem
-    {
-    public:
-        LevelSystem();
+public:
+    LevelSystem() = default;
 
-        void reset();
+    void     addLines(int lines) noexcept;
+    void     reset() noexcept;
 
-        void addLines(int linesCleared);
+    [[nodiscard]] int      getLevel()      const noexcept { return m_level; }
+    [[nodiscard]] int      getTotalLines() const noexcept { return m_totalLines; }
 
-        std::int32_t level() const noexcept;
-        std::int32_t totalLines() const noexcept;
+    /// Gravity interval in seconds (how long before the piece drops one row)
+    [[nodiscard]] float    getDropInterval() const noexcept;
 
-        double gravity() const noexcept;
+private:
+    void updateLevel() noexcept;
 
-    private:
-        void updateLevel();
+    int m_totalLines{0};
+    int m_level{1};
 
-    private:
-        std::int32_t level_;
-        std::int32_t totalLines_;
-    };
-}
+    static constexpr int k_maxLevel = 15;
+};
