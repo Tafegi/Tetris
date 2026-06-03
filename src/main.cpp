@@ -1,4 +1,3 @@
-// src/main.cpp
 #include "core/Application.h"
 
 int main()

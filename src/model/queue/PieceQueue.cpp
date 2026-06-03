@@ -1,4 +1,3 @@
-// src/model/queue/PieceQueue.cpp
 #include "PieceQueue.h"
 #include <algorithm>
 #include <random>

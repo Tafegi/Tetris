@@ -1,8 +1,6 @@
-// src/view/GameView.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 // Forward declarations – keep view headers thin
 class Game;

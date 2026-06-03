@@ -1,4 +1,3 @@
-// src/core/Application.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -10,7 +9,7 @@ class Application
 {
 public:
     Application();
-    ~Application(); // defined in .cpp where GameController is complete
+    ~Application();
 
     Application(const Application&)            = delete;
     Application& operator=(const Application&) = delete;

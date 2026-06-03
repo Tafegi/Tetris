@@ -1,4 +1,3 @@
-// src/model/tetromino/Tetromino.h
 #pragma once
 
 #include <array>

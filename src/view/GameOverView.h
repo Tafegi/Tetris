@@ -1,4 +1,3 @@
-// src/view/GameOverView.h
 #pragma once
 #include <SFML/Graphics.hpp>
 

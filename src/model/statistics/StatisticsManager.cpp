@@ -1,4 +1,3 @@
-// src/model/statistics/StatisticsManager.cpp
 #include "StatisticsManager.h"
 #include <numeric>
 #include <algorithm>

@@ -1,4 +1,3 @@
-// src/model/score/ScoreSystem.h
 #pragma once
 #include <cstdint>
 

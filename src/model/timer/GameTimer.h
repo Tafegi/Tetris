@@ -1,4 +1,3 @@
-// src/model/timer/GameTimer.h
 #pragma once
 
 /**

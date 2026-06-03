@@ -1,4 +1,3 @@
-// src/model/hold/HoldSystem.h
 #pragma once
 
 #include "model/tetromino/Tetromino.h"

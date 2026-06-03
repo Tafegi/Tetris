@@ -1,4 +1,3 @@
-// src/view/GameView.cpp
 #include "GameView.h"
 #include "model/game/Game.h"
 #include "model/board/Board.h"

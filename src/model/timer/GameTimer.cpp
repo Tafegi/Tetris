@@ -1,4 +1,3 @@
-// src/model/timer/GameTimer.cpp
 #include "GameTimer.h"
 
 GameTimer::GameTimer(float interval) noexcept

@@ -1,4 +1,3 @@
-// src/model/game/Game.h
 #pragma once
 
 #include "model/board/Board.h"
@@ -9,7 +8,6 @@
 #include "model/statistics/StatisticsManager.h"
 #include "model/tetromino/Tetromino.h"
 #include "model/timer/GameTimer.h"
-#include <optional>
 
 /**
  * @brief Central game-logic façade.  Pure model – zero rendering code.

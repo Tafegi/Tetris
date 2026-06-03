@@ -1,4 +1,3 @@
-// src/model/queue/PieceQueue.h
 #pragma once
 
 #include "model/tetromino/Tetromino.h"

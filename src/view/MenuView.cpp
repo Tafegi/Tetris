@@ -1,4 +1,3 @@
-// src/view/MenuView.cpp
 #include "MenuView.h"
 
 MenuView::MenuView(sf::RenderWindow& window)
@@ -39,7 +38,6 @@ void MenuView::render()
     m_window.draw(sub);
 
     // ── Menu options ───────────────────────────────────
-    // Додаємо outBounds як параметр, щоб зберігати прямокутник тексту
     auto drawOption = [&](const std::string& text, float y, sf::Color color, sf::FloatRect& outBounds)
     {
         auto t = makeText(text, 22, color);
@@ -47,26 +45,22 @@ void MenuView::render()
         t.setOrigin({b.size.x / 2.f, b.size.y / 2.f}); // SFML 3 fix
         t.setPosition({cx, y});
 
-        // Зберігаємо глобальні координати на екрані
         outBounds = t.getGlobalBounds();
         m_window.draw(t);
     };
 
-    // Оновили текст і передаємо відповідні змінні для збереження границь
     drawOption("Click or ENTER to Play",    300.f, sf::Color(220, 220, 255), m_playBounds);
     drawOption("Click or S for Statistics", 345.f, sf::Color(160, 160, 190), m_statsBounds);
     drawOption("Click or ESC to Quit",      390.f, sf::Color(120, 120, 150), m_quitBounds);
 }
 
-// Новий метод, який повертає яку кнопку натиснуто
 std::optional<MenuOption> MenuView::handleClick(sf::Vector2i mousePos) const
 {
-    // Перетворюємо координати миші у float для порівняння з FloatRect
     sf::Vector2f pos(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
 
     if (m_playBounds.contains(pos))  return MenuOption::Play;
     if (m_statsBounds.contains(pos)) return MenuOption::Statistics;
     if (m_quitBounds.contains(pos))  return MenuOption::Quit;
 
-    return std::nullopt; // Клікнули в пусте місце
+    return std::nullopt;
 }

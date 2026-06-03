@@ -1,8 +1,6 @@
-// src/core/Application.cpp
 #include "Application.h"
 #include "controller/GameController.h"
 
-// Destructor here — GameController is fully defined in this translation unit
 Application::~Application() = default;
 
 Application::Application()
@@ -26,7 +24,6 @@ void Application::run()
 
 void Application::processEvents()
 {
-    // SFML 3: pollEvent() returns std::optional<sf::Event>
     while (const std::optional<sf::Event> event = m_window.pollEvent())
     {
         if (event->is<sf::Event::Closed>())

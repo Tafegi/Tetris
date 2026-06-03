@@ -1,4 +1,3 @@
-// src/model/score/ScoreSystem.cpp
 #include "ScoreSystem.h"
 #include <algorithm>
 

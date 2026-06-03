@@ -1,4 +1,3 @@
-// src/view/StatisticsView.cpp
 #include "StatisticsView.h"
 #include "model/statistics/StatisticsManager.h"
 #include "model/score/ScoreSystem.h"

@@ -1,4 +1,3 @@
-// src/model/game/Game.cpp
 #include "Game.h"
 #include "model/tetromino/TetrominoFactory.h"
 #include <algorithm>

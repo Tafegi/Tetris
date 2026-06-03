@@ -1,10 +1,8 @@
-// src/model/board/Board.h
 #pragma once
 
 #include "model/tetromino/Tetromino.h"
 #include <array>
 #include <optional>
-#include <vector>
 
 /**
  * @brief 10×20 playfield grid.

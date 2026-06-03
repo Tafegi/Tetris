@@ -1,4 +1,3 @@
-// src/view/GameOverView.cpp
 #include "GameOverView.h"
 #include "model/game/Game.h"
 #include <string>

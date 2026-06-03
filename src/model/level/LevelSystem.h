@@ -1,6 +1,4 @@
-// src/model/level/LevelSystem.h
 #pragma once
-#include <cstdint>
 
 /**
  * @brief Tracks total lines cleared and derives the current level.

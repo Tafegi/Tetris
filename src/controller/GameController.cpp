@@ -1,4 +1,3 @@
-// src/controller/GameController.cpp
 #include "GameController.h"
 
 GameController::GameController(sf::RenderWindow& window)
@@ -33,7 +32,6 @@ void GameController::handleEvent(const sf::Event& event)
 
 void GameController::handleMenuEvent(const sf::Event& event)
 {
-    // 1. Обробка клавіатури (залишається як було)
     if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
         switch (kp->code)
@@ -44,12 +42,10 @@ void GameController::handleMenuEvent(const sf::Event& event)
             default: break;
         }
     }
-    // 2. Нове: Обробка кліку мишкою
     else if (const auto* mbp = event.getIf<sf::Event::MouseButtonPressed>())
     {
         if (mbp->button == sf::Mouse::Button::Left)
         {
-            // Передаємо координати миші у View
             auto clickedOption = m_menuView->handleClick(mbp->position);
 
             if (clickedOption.has_value())

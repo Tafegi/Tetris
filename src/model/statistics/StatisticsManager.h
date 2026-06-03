@@ -1,4 +1,3 @@
-// src/model/statistics/StatisticsManager.h
 #pragma once
 #include <array>
 #include <cstdint>

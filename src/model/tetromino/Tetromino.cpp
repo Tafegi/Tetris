@@ -1,4 +1,3 @@
-// src/model/tetromino/Tetromino.cpp
 #include "Tetromino.h"
 
 Tetromino::Tetromino(TetrominoType              type,

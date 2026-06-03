@@ -1,4 +1,3 @@
-// src/model/hold/HoldSystem.cpp
 #include "HoldSystem.h"
 #include "model/tetromino/TetrominoFactory.h"
 

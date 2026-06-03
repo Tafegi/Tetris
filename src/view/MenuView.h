@@ -1,4 +1,3 @@
-// src/view/MenuView.h
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <optional>
@@ -11,7 +10,6 @@ public:
     explicit MenuView(sf::RenderWindow& window);
     void render();
 
-    // Новий метод для перевірки кліку
     std::optional<MenuOption> handleClick(sf::Vector2i mousePos) const;
 
 private:
@@ -19,7 +17,6 @@ private:
     sf::RenderWindow& m_window;
     sf::Font          m_font;
 
-    // Зберігаємо фізичні межі кнопок (прямокутники)
     sf::FloatRect m_playBounds;
     sf::FloatRect m_statsBounds;
     sf::FloatRect m_quitBounds;

@@ -1,4 +1,3 @@
-// src/controller/GameController.h
 #pragma once
 
 #include "model/game/Game.h"

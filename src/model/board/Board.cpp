@@ -1,4 +1,3 @@
-// src/model/board/Board.cpp
 #include "Board.h"
 #include <algorithm>
 
@@ -20,7 +19,7 @@ bool Board::isInBounds(int col, int row) const noexcept
 
 bool Board::isOccupied(int col, int row) const noexcept
 {
-    if (!isInBounds(col, row)) return true; // treat OOB as occupied
+    if (!isInBounds(col, row)) return true;
     return m_grid[row][col].a != 0;
 }
 
@@ -61,12 +60,10 @@ int Board::clearFullRows()
                                 [](const sf::Color& c){ return c.a != 0; });
         if (full)
         {
-            // Shift everything above down by one
             for (int r = row; r > 0; --r)
                 m_grid[r] = m_grid[r - 1];
             m_grid[0].fill(k_empty);
             ++cleared;
-            // Don't advance row index – re-check same row after shift
         }
         else
         {

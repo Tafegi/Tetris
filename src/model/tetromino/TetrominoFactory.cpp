@@ -1,4 +1,3 @@
-// src/model/tetromino/TetrominoFactory.cpp
 #include "TetrominoFactory.h"
 
 // ── SRS rotation tables ───────────────────────────────────────────────────────

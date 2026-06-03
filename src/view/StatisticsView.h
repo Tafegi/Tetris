@@ -1,4 +1,3 @@
-// src/view/StatisticsView.h
 #pragma once
 #include <SFML/Graphics.hpp>
 

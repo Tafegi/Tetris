@@ -1,4 +1,3 @@
-// src/model/tetromino/TetrominoFactory.h
 #pragma once
 
 #include "Tetromino.h"

@@ -1,138 +1,113 @@
 # Tetris
 
-## Overview
+## Огляд
 
-Tetris is a desktop implementation of the classic puzzle game developed in C++ using the MVC (Model–View–Controller) architectural pattern.
+Tetris — це десктопна реалізація класичної гри-головоломки, розроблена мовою C++ з використанням архітектурного патерну MVC (Model–View–Controller).
 
-The project was created as an educational software engineering project with a focus on:
+Проєкт створено як навчальний з програмної інженерії з акцентом на:
 
-* Object-Oriented Programming (OOP)
-* SOLID principles
-* MVC architecture
-* UML modeling
-* Static code analysis
-* Modern C++20
-
----
-
-## Features
-
-### Gameplay
-
-* Classic Tetris mechanics
-* Piece rotation
-* Hard drop
-* Hold system
-* Next piece queue
-* Line clearing
-* Score calculation
-* Level progression
-* Game timer
-* High score tracking
-* Statistics collection
-* Configurable settings
-
-### Technical Features
-
-* MVC architecture
-* Modular project structure
-* UML documentation
-* Clang-Tidy support
-* Cppcheck support
-* Clang-Format support
+* Об'єктно-орієнтоване програмування (ООП)
+* Архітектуру MVC, що розділяє чисту логіку та рендеринг
+* Сучасні можливості C++, включаючи розумні вказівники та `std::optional`
+* Подійно-орієнтоване управління вікнами та вводом
+* Реалізацію ігрового циклу з обробкою delta time
 
 ---
 
-## Project Structure
+## Можливості
 
-```text
-src/
-├── model/
-│   ├── board/
-│   ├── tetromino/
-│   ├── game/
-│   ├── queue/
-│   ├── hold/
-│   ├── score/
-│   ├── level/
-│   ├── statistics/
-│   ├── highscore/
-│   ├── settings/
-│   ├── rules/
-│   ├── random/
-│   ├── timer/
-│   └── types/
-│
-├── view/
-│
-├── controller/
-│
-├── state/
-│
-├── services/
-│
-└── interfaces/
-```
+### Геймплей
+
+* Класична механіка Тетрісу за стандартами Guideline
+* Система супер-обертання (SRS) з просунутими відштовхуваннями від стін (wall kicks)
+* Підтримка Hard drop (відображення фігури-привида) та Soft drop
+* Система утримання фігури (Hold) з блокуванням на один хід
+* Система рандомізації 7-bag для рівномірного розподілу фігур
+* Черга попереднього перегляду на 5 наступних фігур
+* Очищення ліній з системою нарахування очок за Guideline (Single, Double, Triple, Tetris)
+* Прогресія рівнів з динамічною гравітацією на основі формул
+* Затримка автозсуву (DAS) та частота автоповтору (ARR) для плавного безперервного руху
+* Збір статистики щодо появи фігур та типів очищених ліній
+
+### Технічні особливості
+
+* Інтеграція SFML 3 для графіки, тексту та управління вікнами
+* Попередньо обчислені матриці обертання та таблиці wall-kick для оптимальної продуктивності
+* Надійна машина станів для управління потоком додатку (Меню, Гра, Пауза, Кінець гри, Статистика)
+* Обробка подій миші та клавіатури
+* Резервні шрифти для кросплатформної сумісності
 
 ---
 
-## Architecture
+## Структура проєкту
 
-The application follows the MVC pattern.
-
-### Model
-
-Responsible for:
-
-* game logic
-* game rules
-* score calculation
-* level progression
-* statistics
-* persistence
-
-### View
-
-Responsible for:
-
-* rendering
-* menus
-* animations
-* user interface
-
-### Controller
-
-Responsible for:
-
-* processing user input
-* coordinating Model and View
-* managing game states
+    src/
+    ├── controller/
+    │   └── GameController
+    │
+    ├── core/
+    │   └── Application
+    │
+    ├── model/
+    │   ├── board/
+    │   ├── game/
+    │   ├── hold/
+    │   ├── level/
+    │   ├── queue/
+    │   ├── score/
+    │   ├── statistics/
+    │   ├── tetromino/
+    │   └── timer/
+    │
+    └── view/
+        ├── GameOverView
+        ├── GameView
+        ├── MenuView
+        └── StatisticsView
 
 ---
 
-## UML Documentation
+## Архітектура
 
-Documentation is located in the `docs` directory:
+Додаток суворо дотримується патерну MVC.
 
-* UML_Class_Diagram.puml
-* Package_Diagram.puml
-* Dependency_Graph.puml
+### Модель (Model)
 
-These files can be opened using PlantUML.
+Відповідає за:
+
+* Чисту ігрову логіку та стан без жодних залежностей від рендерингу
+* Матрицю ігрового поля та виявлення зіткнень
+* Нарахування очок, рівні та таймінги гравітації
+* Математику обертання SRS та wall-kick
+
+### Вигляд (View)
+
+Відповідає за:
+
+* Рендеринг ігрового поля, фігури-привида та інтерфейсу (HUD)
+* Відмальовування меню, екранів статистики та оверлеїв
+* Управління фігурами, кольорами та шрифтами SFML
+
+### Контролер (Controller)
+
+Відповідає за:
+
+* Обробку вводу користувача через SFML (клавіатура та миша)
+* Передачу дій вводу до Моделі (Гри)
+* Управління переходами між екранами та станами додатку
+* Обробку логіки автоповторення DAS/ARR
 
 ---
 
-## Build Requirements
+## Вимоги для збірки
 
-Required software:
+Необхідне програмне забезпечення:
 
 * CMake 3.20+
-* C++20 compatible compiler
-* Clang-Format (optional)
-* Clang-Tidy (optional)
-* Cppcheck (optional)
+* C++20 сумісний компілятор
+* Бібліотека SFML 3.x
 
-Recommended compilers:
+Рекомендовані компілятори:
 
 * GCC 13+
 * Clang 16+
@@ -140,62 +115,33 @@ Recommended compilers:
 
 ---
 
-## Build Instructions
+## Інструкції зі збірки
 
-### Configure
+### Конфігурація
 
-```bash
-cmake -B build
-```
+    cmake -B build
 
-### Build
+### Збірка
 
-```bash
-cmake --build build
-```
+    cmake --build build
 
-### Run
+### Запуск
 
-```bash
-./build/Tetris
-```
+    ./build/Tetris
 
 ---
 
-## Static Analysis
+## Принципи проєктування
 
-### Clang-Format
+Проєкт дотримується:
 
-```bash
-./scripts/format.sh
-```
-
-### Clang-Tidy
-
-```bash
-./scripts/run-clang-tidy.sh
-```
-
-### Cppcheck
-
-```bash
-./scripts/run-cppcheck.sh
-```
+* Принципів SOLID
+* Принципу єдиної відповідальності (наприклад, окремі менеджери для Score, Level, Hold, Queue)
+* Суворого розділення обов'язків (Views лише читають з Моделі, Controllers лише змінюють Модель)
+* Інкапсуляції логіки за чистими публічними інтерфейсами
 
 ---
 
-## Design Principles
+## Автор
 
-The project follows:
-
-* SOLID principles
-* Single Responsibility Principle
-* Dependency Inversion Principle
-* Encapsulation
-* Separation of Concerns
-
----
-
-## Author
-
-Educational project developed as part of a software engineering and object-oriented programming course.
+Бабіч Андрій ШІД-11, програма розроблений в рамках курсу Алгоритмізація та програмування.
