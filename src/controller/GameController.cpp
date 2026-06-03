@@ -33,15 +33,34 @@ void GameController::handleEvent(const sf::Event& event)
 
 void GameController::handleMenuEvent(const sf::Event& event)
 {
-    // SFML 3: getIf returns a pointer to the subtype, or nullptr
+    // 1. Обробка клавіатури (залишається як було)
     if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
         switch (kp->code)
         {
-            case sf::Keyboard::Key::Enter:  transitionTo(AppState::Playing);    break;
+            case sf::Keyboard::Key::Enter:  transitionTo(AppState::Playing); break;
             case sf::Keyboard::Key::S:      transitionTo(AppState::Statistics); break;
-            case sf::Keyboard::Key::Escape: m_window.close();                   break;
+            case sf::Keyboard::Key::Escape: m_window.close(); break;
             default: break;
+        }
+    }
+    // 2. Нове: Обробка кліку мишкою
+    else if (const auto* mbp = event.getIf<sf::Event::MouseButtonPressed>())
+    {
+        if (mbp->button == sf::Mouse::Button::Left)
+        {
+            // Передаємо координати миші у View
+            auto clickedOption = m_menuView->handleClick(mbp->position);
+
+            if (clickedOption.has_value())
+            {
+                switch (clickedOption.value())
+                {
+                    case MenuOption::Play:       transitionTo(AppState::Playing); break;
+                    case MenuOption::Statistics: transitionTo(AppState::Statistics); break;
+                    case MenuOption::Quit:       m_window.close(); break;
+                }
+            }
         }
     }
 }
